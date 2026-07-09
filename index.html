@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MacacoSpeak 🍌</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        button, input, select {
+            cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' style='font-size:20px'><text y='20'>🍌</text></svg>") 4 4, pointer !important;
+        }
+
+        /* 
+         * VARIÁVEIS DE CORES DINÂMICAS 
+         * O aplicativo inteiro puxa as cores daqui. Quando o tema muda, as variáveis mudam!
+         */
+        body {
+            font-family: 'Comic Sans MS', 'Chalkboard SE', 'Marker Felt', sans-serif;
+            display: flex; height: 100vh; overflow: hidden;
+            /* Suaviza a troca de temas */
+            transition: background-color 0.5s ease, background-image 0.5s ease;
+        }
+        
+        /* 1. TEMA BANANA (AMARELO/MARROM) - PADRÃO */
+        body.fundo-banana {
+            --t-bg: #FFF3B0;
+            --t-side: rgba(255, 235, 150, 0.65);
+            --t-box: rgba(109, 76, 65, 0.85);
+            --t-border: #5D4037;
+            --t-text-box: #FFE082;
+            --t-text: #4E342E;
+            --t-msg-minha: #FFE082;
+            --t-msg-outra: #FFF8DC;
+            background-color: var(--t-bg);
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><text y='55' x='20' font-size='40' opacity='0.6'>🍌</text></svg>");
+        }
+
+        /* 2. TEMA MACONHEIRO (VERDES PASTEL) */
+        body.fundo-cannabis {
+            --t-bg: #A3E4D7;
+            --t-side: rgba(163, 228, 215, 0.65);
+            --t-box: rgba(30, 132, 73, 0.85);
+            --t-border: #1E8449;
+            --t-text-box: #D5F5E3;
+            --t-text: #145A32;
+            --t-msg-minha: #A9DFBF;
+            --t-msg-outra: #E8F8F5;
+            background-color: var(--t-bg);
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><text y='60' x='30' font-size='40' opacity='0.7'>🐵</text><text y='70' x='25' font-size='25' opacity='0.6'>🌿</text><text y='60' x='60' font-size='25' opacity='0.5'>💨</text></svg>");
+        }
+
+        /* 3. TEMA GAY (ROSAS E LILÁS) */
+        body.fundo-gay {
+            --t-bg: #F8C8DC;
+            --t-side: rgba(248, 200, 220, 0.65);
+            --t-box: rgba(136, 14, 79, 0.85);
+            --t-border: #880E4F;
+            --t-text-box: #FCE4EC;
+            --t-text: #4A148C;
+            --t-msg-minha: #F48FB1;
+            --t-msg-outra: #FCE4EC;
+            background-color: var(--t-bg);
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><text y='60' x='30' font-size='40' opacity='0.7'>🐵</text><text y='52' x='33' font-size='32' opacity='0.7'>🕶️</text><text y='68' x='42' font-size='20' opacity='0.7'>💋</text></svg>");
+        }
+
+        /* 4. HORA DE DORMIR (DARK MODE PASTEL) */
+        body.fundo-noite {
+            --t-bg: #3D3B4C;
+            --t-side: rgba(61, 59, 76, 0.75);
+            --t-box: rgba(26, 25, 36, 0.85);
+            --t-border: #1A1924;
+            --t-text-box: #D1C4E9;
+            --t-text: #E8EAF6;
+            --t-msg-minha: #5C6BC0;
+            --t-msg-outra: #3949AB;
+            background-color: var(--t-bg);
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><text y='35' x='15' font-size='20' opacity='0.3'>⭐</text><text y='80' x='60' font-size='35' opacity='0.4'>🙈</text></svg>");
+        }
+
+        /* 5. TEMA AUTISTA (ESPECTRO ARCO-ÍRIS PASTEL E CINZA CHUMBO) */
+        body.fundo-autista {
+            --t-bg: transparent; /* O bg aqui é o gradiente na imagem */
+            --t-side: rgba(255, 255, 255, 0.45);
+            --t-box: rgba(74, 74, 74, 0.9);
+            --t-border: #4A4A4A;
+            --t-text-box: #FFF;
+            --t-text: #333;
+            --t-msg-minha: #BAE1FF;
+            --t-msg-outra: #FFF;
+            /* Combina as marcas d'água com o Gradiente Pastel do Espectro */
+            background-image: 
+                url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><text y='60' x='30' font-size='40' opacity='0.6'>🐵</text><text y='48' x='22' font-size='24' opacity='0.6'>🧩</text><text y='85' x='25' font-size='32' opacity='0.5'>🦖</text><text y='55' x='75' font-size='32' opacity='0.5'>👽</text></svg>"), 
+                linear-gradient(45deg, #FFB3BA, #FFDFBA, #FFFFBA, #BAFFC9, #BAE1FF);
+        }
+
+        /* 6. TEMA NUVEM FELIZ (AZUL CÉU) */
+        body.fundo-nuvem {
+            --t-bg: #A1C4FD;
+            --t-side: rgba(161, 196, 253, 0.65);
+            --t-box: rgba(21, 101, 192, 0.85);
+            --t-border: #1565C0;
+            --t-text-box: #E3F2FD;
+            --t-text: #0D47A1;
+            --t-msg-minha: #90CAF9;
+            --t-msg-outra: #E3F2FD;
+            background-color: var(--t-bg);
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><text y='70' x='15' font-size='50' opacity='0.6'>☁️</text><text y='60' x='35' font-size='25' opacity='0.8'>🐵</text></svg>");
+        }
+
+        /* --- APLICAÇÃO DAS VARIÁVEIS NA INTERFACE --- */
+
+        .sidebar {
+            background-color: var(--t-side);
+            backdrop-filter: blur(4px);
+            width: 280px; padding: 15px;
+            display: flex; flex-direction: column;
+            z-index: 10; overflow-y: auto; flex-shrink: 0;
+            border-right: 2px solid var(--t-border);
+            transition: background-color 0.5s ease, border-color 0.5s ease;
+        }
+        
+        h2 { 
+            margin-top: 0; font-size: 24px; text-align: center; 
+            color: var(--t-border); 
+            text-shadow: 1px 1px 0px var(--t-text-box); 
+            padding-bottom: 10px; margin-bottom: 10px;
+            transition: color 0.5s ease;
+        }
+        
+        .apelido-container, .amigo-box {
+            background-color: var(--t-box); padding: 12px; border-radius: 12px;
+            margin-bottom: 12px; border: 2px solid var(--t-border); text-align: left;
+            box-shadow: 0 3px 0 var(--t-border);
+            transition: all 0.5s ease;
+        }
+        .apelido-container label, .amigo-box, #titulo-macacos { 
+            font-size: 13px; font-weight: bold; color: var(--t-text-box); display: block; 
+            transition: color 0.5s ease;
+        }
+        
+        .input-group { display: flex; gap: 6px; margin-top: 8px; width: 100%; align-items: stretch; }
+        
+        input[type="text"], select {
+            flex: 1; min-width: 0; padding: 0 10px; border-radius: 10px; 
+            border: 2px solid var(--t-border); font-weight: bold; font-size: 14px; 
+            outline: none; font-family: inherit;
+            background-color: var(--t-msg-outra); color: var(--t-text); 
+            height: 38px; margin: 0;
+            transition: all 0.5s ease;
+        }
+        input::placeholder { color: var(--t-text); opacity: 0.6; }
+        
+        #btn-ok-apelido {
+            flex-shrink: 0; width: auto; padding: 0 12px; 
+            background-color: #78E08F; color: #2E7D32; 
+            border-radius: 10px; border: 2px solid #2E7D32; font-family: inherit; font-weight: bold;
+            box-shadow: 0 3px 0 #2E7D32; height: 38px; margin: 0;
+            display: flex; align-items: center; justify-content: center; font-size: 14px; transition: 0.1s;
+        }
+        #btn-ok-apelido:hover:not(:disabled) { background-color: #B8E994; }
+        #btn-ok-apelido:active:not(:disabled) { transform: translateY(3px); box-shadow: none; }
+
+        .salas { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+        
+        /* Botões padronizados e harmônicos */
+        button {
+            background-color: #F8C291; color: #5D4037; border: 2px solid #E58E26; 
+            padding: 10px; border-radius: 12px; font-weight: bold; font-size: 14px;
+            box-shadow: 0 3px 0 #E58E26; transition: 0.1s; font-family: inherit; cursor: pointer;
+        }
+        button:hover:not(:disabled) { background-color: #FAD390; }
+        button:active:not(:disabled) { transform: translateY(3px); box-shadow: none; }
+        
+        .btn-ativo { background-color: #78E08F !important; box-shadow: 0 3px 0 #2E7D32 !important; border-color: #2E7D32 !important; color: #1B5E20;}
+        .btn-mute { background-color: #82CCDD; box-shadow: 0 3px 0 #60A3BC; border-color: #60A3BC; margin-top: 5px; width: 100%; color: #0A3D62; }
+        .btn-muted { background-color: #F19066 !important; box-shadow: 0 3px 0 #C44569 !important; border-color: #C44569 !important; color: #FFF; }
+        .btn-ruido { background-color: #FDA7DF; box-shadow: 0 3px 0 #D980FA; border-color: #D980FA; margin-top: 5px; width: 100%; color: #574B90;}
+        
+        input[type="range"] { accent-color: var(--t-border); height: 6px; width: 100%; margin-top: 5px; cursor: pointer;}
+
+        /* Galho interage com as cores */
+        #visual-da-arvore {
+            background-color: var(--t-side); border-radius: 15px; padding: 10px; margin-top: 10px;
+            position: relative; min-height: 80px; display: flex; justify-content: center; align-items: flex-end; gap: 4px;
+            border: 2px dashed var(--t-border);
+            transition: all 0.5s ease;
+        }
+        #visual-da-arvore::after {
+            content: ""; position: absolute; left: 8px; right: 8px; bottom: 8px; height: 8px; background-color: var(--t-border); border-radius: 4px; z-index: 1;
+            transition: background 0.5s ease;
+        }
+        .macaco-no-galho {
+            font-size: 28px; z-index: 2; margin-bottom: 8px; animation: pularMacaco 0.3s ease infinite alternate; display: inline-block;
+        }
+        @keyframes pularMacaco {
+            from { transform: translateY(0) scale(1); }
+            to { transform: translateY(-10px) scale(1.05); }
+        }
+
+        .chat-area { flex: 1; display: flex; flex-direction: column; position: relative; background-color: transparent; }
+        
+        /* Balões de Chat que mudam com as cores do tema */
+        #chat-messages { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        .mensagem { 
+            padding: 10px 15px; border-radius: 15px; max-width: 75%; 
+            font-weight: 500; font-size: 14px; color: var(--t-text);
+            background-color: var(--t-msg-outra); border: 2px solid var(--t-border); 
+            box-shadow: 2px 2px 0 rgba(0,0,0,0.1); word-break: break-word;
+            transition: all 0.5s ease;
+        }
+        .mensagem.minha { 
+            background-color: var(--t-msg-minha); align-self: flex-end; 
+        }
+        
+        /* Menu Inferior Fluido */
+        .chat-input-area { 
+            display: flex; padding: 15px 25px; gap: 10px;
+            background-color: var(--t-side); 
+            backdrop-filter: blur(8px); border-top: 1px solid var(--t-border);
+            align-items: center; transition: all 0.5s ease;
+        }
+        #chat-input { 
+            flex: 1; min-width: 0; padding: 0 15px; border-radius: 12px; border: 2px solid var(--t-border); 
+            font-size: 14px; outline: none; background-color: var(--t-msg-outra); color: var(--t-text); 
+            font-family: inherit; height: 45px; margin: 0; transition: all 0.5s ease;
+        }
+        
+        #btn-enviar { 
+            width: auto; padding: 0 20px; background-color: #78E08F; color: #1B5E20; 
+            border: 2px solid #2E7D32; box-shadow: 0 3px 0 #2E7D32; 
+            height: 45px; margin: 0; display: flex; align-items: center; justify-content: center; font-size: 14px;
+        }
+        #btn-enviar:active { transform: translateY(3px); box-shadow: none; }
+        
+        #select-fundo {
+            width: 100%; padding: 8px; border-radius: 10px; margin-top: 8px;
+        }
+
+        #titulo-macacos {
+            background-color: var(--t-box); border: 2px solid var(--t-border); padding: 5px 10px; border-radius: 8px;
+        }
+
+        /* TELA DE BLOQUEIO MANTIDA TRANSLÚCIDA */
+        #overlay-bloqueio { 
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0; 
+            background-color: rgba(0, 0, 0, 0.4); 
+            backdrop-filter: blur(8px); 
+            display: flex; align-items: center; justify-content: center; color: #FFF8DC; 
+            font-size: 26px; font-weight: bold; z-index: 20; text-align: center; padding: 20px; 
+            text-shadow: 2px 2px 0 rgba(0,0,0,0.5); border-radius: 20px 0 0 20px;
+        }
+    </style>
+</head>
+<!-- Chuva de Banana definida como o padrao inicial de novo -->
+<body class="fundo-banana"> 
+
+    <div class="sidebar">
+        <h2>🐵 MacacoSpeak</h2>
+        
+        <div class="apelido-container">
+            <label>Suba seu Nome:</label>
+            <div class="input-group">
+                <input type="text" id="txt-apelido" placeholder="Macaquinho..." autocomplete="off">
+                <button id="btn-ok-apelido" onclick="salvarApelido()">OK!</button>
+            </div>
+        </div>
+
+        <div class="apelido-container">
+            <label>Escolha o Cenário:</label>
+            <select id="select-fundo" onchange="alterarFundo(this.value)">
+                <option value="banana">🍌 Chuva de Banana</option>
+                <option value="autista">🧩 Macaco Autista Dino & ET</option>
+                <option value="cannabis">🌿 Macaco Maconheiro</option>
+                <option value="gay">💋 Macaco Gay Fabuloso</option>
+                <option value="noite">⭐ Hora de Dormir</option>
+                <option value="nuvem">☁️ Macaco na Nuvem Feliz</option>
+            </select>
+        </div>
+        
+        <div class="salas">
+            <button id="btn-arvore1" onclick="entrarNaSala('arvore-1')">🌴 Subir na Árvore 1!</button>
+            <button id="btn-arvore2" onclick="entrarNaSala('arvore-2')">🌴 Subir na Árvore 2!</button>
+        </div>
+        
+        <div id="controles-sala" style="display: none;">
+            <button id="btn-mutar" class="btn-mute" onclick="mutarMicrofone()">🐵 Mic Aberto!</button>
+            <button id="btn-ruido" class="btn-ruido" onclick="alternarRuido()">🎧 Filtro Mágico: LIGADO</button>
+            
+            <div style="margin-top: 15px;">
+                <strong id="titulo-macacos">Cadê todo mundo?</strong>
+                <div id="visual-da-arvore"></div>
+                <div id="lista-amigos"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="chat-area">
+        <div id="overlay-bloqueio">
+            hola macaquito, escolha seu nome<br>e sua arvore, macaquito. 🍌
+        </div>
+        <div id="chat-messages"></div>
+        <div class="chat-input-area">
+            <input type="text" id="chat-input" placeholder="Escreva algo legal..." onkeypress="verificarEnter(event)">
+            <button id="btn-enviar" onclick="enviarMensagem()">Enviar!</button>
+        </div>
+    </div>
+
+    <div id="audios"></div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const peers = {};
+        let localStream;
+        let isMuted = false;
+        let isNoiseSuppressed = true;
+        let salaAtual = null;
+        let apelidoLocal = "";
+
+        function alterarFundo(tipo) {
+            document.body.className = 'fundo-' + tipo;
+        }
+
+        function salvarApelido() {
+            const input = document.getElementById('txt-apelido');
+            if (input.value.trim() !== "") {
+                apelidoLocal = input.value.trim();
+                input.disabled = true;
+                const btnOk = document.getElementById('btn-ok-apelido');
+                btnOk.disabled = true;
+                btnOk.innerText = "✔";
+                btnOk.style.backgroundColor = "#78E08F";
+            } else {
+                alert("Opa! Esqueceu de colocar o nome!");
+            }
+        }
+
+        function tocarSomSintetizado(tipo) {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                osc.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                const t = audioCtx.currentTime;
+
+                if (tipo === 'entrar') {
+                    osc.type = 'sine'; osc.frequency.setValueAtTime(250, t);
+                    osc.frequency.exponentialRampToValueAtTime(650, t + 0.1);
+                    osc.frequency.exponentialRampToValueAtTime(350, t + 0.2);
+                    osc.frequency.exponentialRampToValueAtTime(800, t + 0.3);
+                    gainNode.gain.setValueAtTime(0.1, t);
+                    gainNode.gain.linearRampToValueAtTime(0, t + 0.35);
+                    osc.start(t); osc.stop(t + 0.35);
+                } else if (tipo === 'sair') {
+                    osc.type = 'sine'; osc.frequency.setValueAtTime(450, t);
+                    osc.frequency.linearRampToValueAtTime(150, t + 0.25);
+                    gainNode.gain.setValueAtTime(0.1, t);
+                    gainNode.gain.linearRampToValueAtTime(0, t + 0.25);
+                    osc.start(t); osc.stop(t + 0.25);
+                } else if (tipo === 'mutar') {
+                    osc.type = 'triangle'; osc.frequency.setValueAtTime(190, t);
+                    gainNode.gain.setValueAtTime(0.05, t);
+                    gainNode.gain.linearRampToValueAtTime(0, t + 0.05);
+                    osc.start(t); osc.stop(t + 0.05);
+                }
+            } catch(e) {}
+        }
+
+        async function entrarNaSala(nomeSala) {
+            if (!apelidoLocal) {
+                alert("Escreva seu nome e clique em OK primeiro!");
+                return;
+            }
+
+            try {
+                if (!localStream) {
+                    localStream = await navigator.mediaDevices.getUserMedia({ 
+                        audio: { echoCancellation: true, noiseSuppression: isNoiseSuppressed, autoGainControl: true } 
+                    });
+                }
+                
+                salaAtual = nomeSala;
+                socket.emit('join-room', nomeSala, apelidoLocal);
+                
+                document.getElementById('lista-amigos').innerHTML = '';
+                document.getElementById('chat-messages').innerHTML = '';
+                for (let id in peers) { peers[id].close(); delete peers[id]; }
+                
+                document.getElementById('btn-arvore1').classList.remove('btn-ativo');
+                document.getElementById('btn-arvore2').classList.remove('btn-ativo');
+                document.getElementById(nomeSala === 'arvore-1' ? 'btn-arvore1' : 'btn-arvore2').classList.add('btn-ativo');
+                
+                document.getElementById('controles-sala').style.display = 'block';
+                document.getElementById('overlay-bloqueio').style.display = 'none';
+                
+                tocarSomSintetizado('entrar');
+                verificarListaVazia();
+            } catch (error) {
+                alert("Erro! O navegador bloqueou seu microfone.");
+            }
+        }
+
+        socket.on('current-room-users', (usuarios) => {
+            for (const id in usuarios) configurarConexaoAmigo(id, usuarios[id], false);
+        });
+
+        socket.on('user-connected', async (userId, userNickname) => {
+            tocarSomSintetizado('entrar');
+            configurarConexaoAmigo(userId, userNickname, true);
+        });
+
+        async function configurarConexaoAmigo(userId, userNickname, criarOferta) {
+            const peer = criarPeer(userId, userNickname);
+            localStream.getTracks().forEach(track => peer.addTrack(track, localStream));
+            
+            if (criarOferta) {
+                const offer = await peer.createOffer();
+                await peer.setLocalDescription(offer);
+                socket.emit('signal', userId, { offer });
+            }
+        }
+
+        socket.on('signal', async (fromId, data) => {
+            let peer = peers[fromId];
+            if (data.offer) {
+                if (!peer) peer = criarPeer(fromId, "Amiguinho");
+                await peer.setRemoteDescription(new RTCSessionDescription(data.offer));
+                const answer = await peer.createAnswer();
+                await peer.setLocalDescription(answer);
+                socket.emit('signal', fromId, { answer });
+            } else if (data.answer && peer) {
+                await peer.setRemoteDescription(new RTCSessionDescription(data.answer));
+            } else if (data.candidate && peer) {
+                await peer.addIceCandidate(new RTCIceCandidate(data.candidate));
+            }
+        });
+
+        function criarPeer(userId, userNickname) {
+            if (peers[userId]) return peers[userId];
+
+            const peer = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+            peer.onicecandidate = (e) => { if (e.candidate) socket.emit('signal', userId, { candidate: e.candidate }); };
+            
+            peer.ontrack = (e) => {
+                if (document.getElementById(`caixa-${userId}`)) return;
+                
+                const amigoBox = document.createElement('div');
+                amigoBox.className = 'amigo-box';
+                amigoBox.id = `caixa-${userId}`;
+                amigoBox.innerHTML = `<label style="display:block; margin-bottom:4px;">🐵 Vol. ${userNickname}:</label>
+                    <input type="range" min="0" max="1" step="0.1" value="1" oninput="document.getElementById('audio-${userId}').volume = this.value">`;
+                
+                const audio = document.createElement('audio');
+                audio.id = `audio-${userId}`;
+                audio.srcObject = e.streams[0];
+                audio.autoplay = true;
+                
+                document.getElementById('lista-amigos').appendChild(amigoBox);
+                document.getElementById('audios').appendChild(audio);
+                
+                verificarListaVazia();
+            };
+
+            peers[userId] = peer;
+            return peer;
+        }
+
+        socket.on('user-disconnected', (userId) => {
+            if (peers[userId]) {
+                peers[userId].close();
+                delete peers[userId];
+                document.getElementById(`caixa-${userId}`)?.remove();
+                document.getElementById(`audio-${userId}`)?.remove();
+                tocarSomSintetizado('sair');
+                verificarListaVazia();
+            }
+        });
+
+        function verificarListaVazia() {
+            const numAmigos = Object.keys(peers).length;
+            const totalNaSala = numAmigos + 1;
+            
+            const titulo = document.getElementById('titulo-macacos');
+            const arvoreVisual = document.getElementById('visual-da-arvore');
+            
+            arvoreVisual.innerHTML = "";
+
+            if (totalNaSala === 1) {
+                titulo.innerHTML = `Sozinho na sala 🎈`;
+            } else if (totalNaSala === 2) {
+                titulo.innerHTML = `Macaques 🐒🐒`;
+            } else if (totalNaSala === 3) {
+                titulo.innerHTML = `Macaco junto forte 🦍🦍🦍`;
+            } else {
+                titulo.innerHTML = `Macacada reunida! 🎉🍌`;
+            }
+
+            for (let i = 0; i < totalNaSala; i++) {
+                const spanMacaco = document.createElement('span');
+                spanMacaco.className = 'macaco-no-galho';
+                spanMacaco.innerText = '🐵';
+                spanMacaco.style.animationDelay = `${i * 0.2}s`;
+                arvoreVisual.appendChild(spanMacaco);
+            }
+        }
+
+        function enviarMensagem() {
+            const input = document.getElementById('chat-input');
+            const msg = input.value.trim();
+            if (msg !== "" && salaAtual) {
+                adicionarMensagemNaTela(apelidoLocal, msg, true);
+                socket.emit('chat-message', salaAtual, msg);
+                input.value = "";
+            }
+        }
+        function verificarEnter(event) { if (event.key === "Enter") enviarMensagem(); }
+        
+        socket.on('chat-message', (id, nick, msg) => { adicionarMensagemNaTela(nick, msg, false); });
+
+        function adicionarMensagemNaTela(nome, texto, isMinha) {
+            const chatBox = document.getElementById('chat-messages');
+            const div = document.createElement('div');
+            div.classList.add('mensagem');
+            if (isMinha) div.classList.add('minha');
+            div.innerHTML = `<strong>${nome}:</strong> ${texto}`;
+            chatBox.appendChild(div);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function mutarMicrofone() {
+            if (localStream) {
+                isMuted = !isMuted;
+                localStream.getAudioTracks()[0].enabled = !isMuted;
+                const btn = document.getElementById('btn-mutar');
+                btn.innerText = isMuted ? "🙊 Mic Fechado!" : "🐵 Mic Aberto!";
+                isMuted ? btn.classList.add('btn-muted') : btn.classList.remove('btn-muted');
+                tocarSomSintetizado('mutar');
+            }
+        }
+
+        function alternarRuido() {
+            if (localStream) {
+                isNoiseSuppressed = !isNoiseSuppressed;
+                localStream.getAudioTracks()[0].applyConstraints({ noiseSuppression: isNoiseSuppressed });
+                const btn = document.getElementById('btn-ruido');
+                btn.innerText = isNoiseSuppressed ? "🎧 Filtro Mágico: LIGADO" : "🎧 Filtro Mágico: DESLIGADO";
+                btn.style.backgroundColor = isNoiseSuppressed ? "#FDA7DF" : "#F19066";
+                btn.style.borderColor = isNoiseSuppressed ? "#D980FA" : "#C44569";
+                btn.style.boxShadow = isNoiseSuppressed ? "0 3px 0 #D980FA" : "0 3px 0 #C44569";
+            }
+        }
+    </script>
+</body>
+</html>
