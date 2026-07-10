@@ -8,14 +8,81 @@ const io = new Server(server);
 // Define a pasta public para o HTML
 app.use(express.static('public'));
 
+function getIceServersFromEnv() {
+    const stunUrls = (process.env.STUN_URLS || 'stun:stun.l.google.com:19302')
+        .split(',')
+        .map((url) => url.trim())
+        .filter(Boolean);
+
+    const turnUrls = (process.env.TURN_URLS || '')
+        .split(',')
+        .map((url) => url.trim())
+        .filter(Boolean);
+
+    const iceServers = [];
+
+    if (stunUrls.length > 0) {
+        iceServers.push({ urls: stunUrls.length === 1 ? stunUrls[0] : stunUrls });
+    }
+
+    if (turnUrls.length > 0) {
+        const turnServer = {
+            urls: turnUrls.length === 1 ? turnUrls[0] : turnUrls
+        };
+
+        if (process.env.TURN_USERNAME) turnServer.username = process.env.TURN_USERNAME;
+        if (process.env.TURN_CREDENTIAL) turnServer.credential = process.env.TURN_CREDENTIAL;
+
+        iceServers.push(turnServer);
+    }
+
+    return iceServers;
+}
+
+const iceServers = getIceServersFromEnv();
+
 const users = {}; // Guarda quem está em qual sala
 
+function getRoomCounts() {
+    const counts = {
+        'arvore-1': 0,
+        'arvore-2': 0
+    };
+
+    Object.values(users).forEach((user) => {
+        if (counts[user.room] !== undefined) counts[user.room] += 1;
+    });
+
+    return counts;
+}
+
+function emitirContagemSalas() {
+    io.emit('room-counts', getRoomCounts());
+}
+
+function getOnlineCount() {
+    return Object.keys(users).length;
+}
+
+function emitirOnlineCount() {
+    io.emit('online-count', getOnlineCount());
+}
+
+function emitirPresencaGlobal() {
+    emitirContagemSalas();
+    emitirOnlineCount();
+}
+
 io.on('connection', (socket) => {
+    socket.emit('ice-config', iceServers);
+    socket.emit('room-counts', getRoomCounts());
+    socket.emit('online-count', getOnlineCount());
     
     // Quando um macaco entra na árvore
     socket.on('join-room', (roomId, nickname) => {
         socket.join(roomId);
         users[socket.id] = { room: roomId, nickname: nickname };
+        emitirPresencaGlobal();
         
         // Avisa os outros que ele chegou
         socket.to(roomId).emit('user-connected', socket.id, nickname);
@@ -45,11 +112,22 @@ io.on('connection', (socket) => {
         }
     });
 
+    // Atualiza apelido em tempo real sem precisar sair da sala
+    socket.on('update-nickname', (newNickname) => {
+        const normalized = typeof newNickname === 'string' ? newNickname.trim() : '';
+        if (!normalized || !users[socket.id]) return;
+
+        users[socket.id].nickname = normalized;
+        const roomId = users[socket.id].room;
+        socket.to(roomId).emit('user-nickname-updated', socket.id, normalized);
+    });
+
     // Quando o macaco clica no botão de sair
     socket.on('leave-room', (roomId) => {
         socket.leave(roomId);
         if (users[socket.id]) delete users[socket.id];
         socket.to(roomId).emit('user-disconnected', socket.id);
+        emitirPresencaGlobal();
     });
 
     // Quando fecha a aba do navegador
@@ -58,12 +136,39 @@ io.on('connection', (socket) => {
             const roomId = users[socket.id].room;
             socket.to(roomId).emit('user-disconnected', socket.id);
             delete users[socket.id];
+            emitirPresencaGlobal();
         }
     });
 });
 
-// A MAGIA DA NUVEM TÁ AQUI (A porta muda sozinha)
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-    console.log(`🐵 MacacoSpeak no ar na porta ${PORT}!`);
-});
+// A MAGIA DA NUVEM TÁ AQUI (com fallback automático de porta)
+const BASE_PORT = Number(process.env.PORT) || 3000;
+const MAX_PORT_ATTEMPTS = 20;
+
+function iniciarServidorComFallback(portaInicial) {
+    let tentativas = 0;
+
+    const tentarOuvir = (portaAtual) => {
+        const onError = (err) => {
+            if (err && err.code === 'EADDRINUSE' && tentativas < MAX_PORT_ATTEMPTS) {
+                tentativas += 1;
+                const proximaPorta = portaAtual + 1;
+                console.warn(`⚠️ Porta ${portaAtual} ocupada. Tentando ${proximaPorta}...`);
+                return tentarOuvir(proximaPorta);
+            }
+
+            console.error('❌ Falha ao iniciar o servidor:', err);
+            process.exit(1);
+        };
+
+        server.once('error', onError);
+        server.listen(portaAtual, () => {
+            server.off('error', onError);
+            console.log(`🐵 MacacoSpeak no ar na porta ${portaAtual}!`);
+        });
+    };
+
+    tentarOuvir(portaInicial);
+}
+
+iniciarServidorComFallback(BASE_PORT);
