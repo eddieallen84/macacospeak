@@ -83,20 +83,38 @@ function sanitizarApelido(nickname) {
     return limpo || 'Macaquinho';
 }
 
+function nicknameEmUsoNaSala(roomId, nickname, ignoreSocketId) {
+    const alvo = nickname.toLowerCase();
+    return Object.entries(users).some(([id, user]) => {
+        if (id === ignoreSocketId) return false;
+        return user.room === roomId && user.nickname.toLowerCase() === alvo;
+    });
+}
+
 io.on('connection', (socket) => {
     socket.emit('ice-config', iceServers);
     socket.emit('room-counts', getRoomCounts());
     socket.emit('online-count', getOnlineCount());
     
     // Quando um macaco entra na árvore
-    socket.on('join-room', (roomId, nickname) => {
-        if (!VALID_ROOMS.has(roomId)) return;
+    socket.on('join-room', (roomId, nickname, callback) => {
+        if (!VALID_ROOMS.has(roomId)) {
+            if (typeof callback === 'function') callback({ ok: false, reason: 'sala-invalida' });
+            return;
+        }
+
+        const apelido = sanitizarApelido(nickname);
+        if (nicknameEmUsoNaSala(roomId, apelido, socket.id)) {
+            if (typeof callback === 'function') callback({ ok: false, reason: 'nick-em-uso' });
+            return;
+        }
+
         socket.join(roomId);
-        users[socket.id] = { room: roomId, nickname: sanitizarApelido(nickname) };
+        users[socket.id] = { room: roomId, nickname: apelido };
         emitirPresencaGlobal();
         
         // Avisa os outros que ele chegou
-        socket.to(roomId).emit('user-connected', socket.id, users[socket.id].nickname);
+        socket.to(roomId).emit('user-connected', socket.id, apelido);
         
         // Manda a lista de quem já tá na sala pro novato
         const usersInRoom = {};
@@ -109,6 +127,8 @@ io.on('connection', (socket) => {
             }
         }
         socket.emit('current-room-users', usersInRoom);
+
+        if (typeof callback === 'function') callback({ ok: true, nickname: apelido });
     });
 
     // Troca de dados de Áudio (WebRTC)
@@ -124,14 +144,24 @@ io.on('connection', (socket) => {
     });
 
     // Atualiza apelido em tempo real sem precisar sair da sala
-    socket.on('update-nickname', (newNickname) => {
-        if (!users[socket.id]) return;
+    socket.on('update-nickname', (newNickname, callback) => {
+        if (!users[socket.id]) {
+            if (typeof callback === 'function') callback({ ok: false, reason: 'sem-sala' });
+            return;
+        }
+
         const normalized = sanitizarApelido(newNickname);
-        if (!normalized) return;
+        const roomId = users[socket.id].room;
+
+        if (nicknameEmUsoNaSala(roomId, normalized, socket.id)) {
+            if (typeof callback === 'function') callback({ ok: false, reason: 'nick-em-uso' });
+            return;
+        }
 
         users[socket.id].nickname = normalized;
-        const roomId = users[socket.id].room;
         socket.to(roomId).emit('user-nickname-updated', socket.id, normalized);
+
+        if (typeof callback === 'function') callback({ ok: true, nickname: normalized });
     });
 
     // Quando o macaco clica no botão de sair

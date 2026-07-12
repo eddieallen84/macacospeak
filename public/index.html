@@ -1126,9 +1126,16 @@
                 return;
             }
 
-            if (input.value.trim() !== "") {
-                const apelidoAnterior = apelidoLocal;
-                apelidoLocal = input.value.trim();
+            if (input.value.trim() === "") {
+                alert("Opa! Esqueceu de colocar o nome!");
+                return;
+            }
+
+            const apelidoAnterior = apelidoLocal;
+            const novoApelido = input.value.trim();
+
+            const aplicarNomeLocalmente = () => {
+                apelidoLocal = novoApelido;
                 input.value = apelidoLocal;
 
                 try {
@@ -1137,9 +1144,17 @@
 
                 atualizarEstadoApelido(true);
                 mostrarToast(`Nome salvo: ${apelidoLocal}`);
+            };
 
-                if (salaAtual && apelidoAnterior && apelidoAnterior !== apelidoLocal) {
-                    socket.emit('update-nickname', apelidoLocal);
+            if (salaAtual && apelidoAnterior && apelidoAnterior !== novoApelido) {
+                socket.emit('update-nickname', novoApelido, (resposta) => {
+                    if (!resposta || !resposta.ok) {
+                        alert('Esse nome já está sendo usado por outro macaco nessa árvore! Escolha outro.');
+                        return;
+                    }
+
+                    aplicarNomeLocalmente();
+
                     const caixaLocal = document.getElementById(`caixa-${socket.id}`);
                     if (caixaLocal) {
                         caixaLocal.innerHTML = '';
@@ -1165,9 +1180,9 @@
                         caixaLocal.appendChild(slider);
                     }
                     adicionarMensagemNaTela('Sistema', `Seu apelido mudou para ${apelidoLocal}.`, true);
-                }
+                });
             } else {
-                alert("Opa! Esqueceu de colocar o nome!");
+                aplicarNomeLocalmente();
             }
         }
 
@@ -1212,33 +1227,45 @@
             try {
                 await prepararMicrofoneInicial();
 
-                if (salaAtual && salaAtual !== nomeSala) {
-                    socket.emit('leave-room', salaAtual);
-                }
-                
-                salaAtual = nomeSala;
-                try { localStorage.setItem(LAST_ROOM_STORAGE_KEY, nomeSala); } catch (_) {}
-                socket.emit('join-room', nomeSala, apelidoLocal);
-                
-                document.getElementById('lista-amigos').innerHTML = '';
-                document.getElementById('audios').innerHTML = '';
-                document.getElementById('chat-messages').innerHTML = '';
-                for (let id in peers) {
-                    peers[id].close();
-                    delete peers[id];
-                    pararDetectorFalaRemota(id);
-                }
-                
-                document.getElementById('btn-arvore1').classList.remove('btn-ativo');
-                document.getElementById('btn-arvore2').classList.remove('btn-ativo');
-                document.getElementById(nomeSala === 'arvore-1' ? 'btn-arvore1' : 'btn-arvore2').classList.add('btn-ativo');
-                
-                document.getElementById('controles-sala').style.display = 'block';
-                document.getElementById('overlay-bloqueio').style.display = 'none';
-                
-                tocarSomSintetizado('entrar');
-                mostrarToast(`Entrou na ${nomeSala.replace('-', ' ')}`);
-                verificarListaVazia();
+                const salaAnterior = salaAtual;
+
+                socket.emit('join-room', nomeSala, apelidoLocal, (resposta) => {
+                    if (!resposta || !resposta.ok) {
+                        if (resposta && resposta.reason === 'nick-em-uso') {
+                            alert('Esse nome já está sendo usado por outro macaco nessa árvore! Escolha outro apelido.');
+                        } else {
+                            alert('Não foi possível entrar nessa árvore. Tente de novo.');
+                        }
+                        return;
+                    }
+
+                    if (salaAnterior && salaAnterior !== nomeSala) {
+                        socket.emit('leave-room', salaAnterior);
+                    }
+
+                    salaAtual = nomeSala;
+                    try { localStorage.setItem(LAST_ROOM_STORAGE_KEY, nomeSala); } catch (_) {}
+
+                    document.getElementById('lista-amigos').innerHTML = '';
+                    document.getElementById('audios').innerHTML = '';
+                    document.getElementById('chat-messages').innerHTML = '';
+                    for (let id in peers) {
+                        peers[id].close();
+                        delete peers[id];
+                        pararDetectorFalaRemota(id);
+                    }
+                    
+                    document.getElementById('btn-arvore1').classList.remove('btn-ativo');
+                    document.getElementById('btn-arvore2').classList.remove('btn-ativo');
+                    document.getElementById(nomeSala === 'arvore-1' ? 'btn-arvore1' : 'btn-arvore2').classList.add('btn-ativo');
+                    
+                    document.getElementById('controles-sala').style.display = 'block';
+                    document.getElementById('overlay-bloqueio').style.display = 'none';
+                    
+                    tocarSomSintetizado('entrar');
+                    mostrarToast(`Entrou na ${nomeSala.replace('-', ' ')}`);
+                    verificarListaVazia();
+                });
             } catch (error) {
                 alert("Erro! O navegador bloqueou seu microfone.");
             }
