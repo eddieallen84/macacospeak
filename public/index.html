@@ -555,6 +555,8 @@
             remoteSpeakingState[userId] = valor;
             const caixa = document.getElementById(`caixa-${userId}`);
             if (caixa) caixa.classList.toggle('falando-remoto', valor);
+            const macaco = document.getElementById(`macaco-${userId}`);
+            if (macaco) macaco.classList.toggle('falando', valor);
             atualizarTituloAmigo(userId);
         }
 
@@ -1172,8 +1174,13 @@
                 socket.emit('join-room', nomeSala, apelidoLocal);
                 
                 document.getElementById('lista-amigos').innerHTML = '';
+                document.getElementById('audios').innerHTML = '';
                 document.getElementById('chat-messages').innerHTML = '';
-                for (let id in peers) { peers[id].close(); delete peers[id]; }
+                for (let id in peers) {
+                    peers[id].close();
+                    delete peers[id];
+                    pararDetectorFalaRemota(id);
+                }
                 
                 document.getElementById('btn-arvore1').classList.remove('btn-ativo');
                 document.getElementById('btn-arvore2').classList.remove('btn-ativo');
@@ -1287,14 +1294,21 @@
             const textoSala = getTextoStatusSala(totalNaSala);
             atualizarStatusSalaTopo(totalNaSala);
 
-            for (let i = 0; i < totalNaSala; i++) {
+            const spanLocal = document.createElement('span');
+            spanLocal.className = 'macaco-no-galho';
+            spanLocal.innerText = '🐵';
+            spanLocal.id = 'macaco-local';
+            arvoreVisual.appendChild(spanLocal);
+
+            Object.keys(peers).forEach((userId, index) => {
                 const spanMacaco = document.createElement('span');
                 spanMacaco.className = 'macaco-no-galho';
                 spanMacaco.innerText = '🐵';
-                if (i === 0) spanMacaco.id = 'macaco-local';
-                spanMacaco.style.animationDelay = `${i * 0.2}s`;
+                spanMacaco.id = `macaco-${userId}`;
+                spanMacaco.style.animationDelay = `${(index + 1) * 0.2}s`;
+                if (remoteSpeakingState[userId]) spanMacaco.classList.add('falando');
                 arvoreVisual.appendChild(spanMacaco);
-            }
+            });
 
             atualizarAnimacaoLocalFala(false);
         }
