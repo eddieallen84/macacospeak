@@ -822,7 +822,7 @@
             presenceBoost.type = 'peaking';
             presenceBoost.frequency.value = 2800;
             presenceBoost.Q.value = 1.1;
-            presenceBoost.gain.value = isNoiseSuppressed ? 5.2 : 2.1;
+            presenceBoost.gain.value = isNoiseSuppressed ? 5.2 : 1.4;
 
             const lowpass = ctx.createBiquadFilter();
             lowpass.type = 'lowpass';
@@ -830,9 +830,9 @@
             lowpass.Q.value = 0.707;
 
             const compressor = ctx.createDynamicsCompressor();
-            compressor.threshold.value = isNoiseSuppressed ? -40 : -28;
+            compressor.threshold.value = isNoiseSuppressed ? -40 : -24;
             compressor.knee.value = isNoiseSuppressed ? 14 : 20;
-            compressor.ratio.value = isNoiseSuppressed ? 5.5 : 3.2;
+            compressor.ratio.value = isNoiseSuppressed ? 5.5 : 2.6;
             compressor.attack.value = 0.004;
             compressor.release.value = isNoiseSuppressed ? 0.2 : 0.14;
 
@@ -1085,12 +1085,16 @@
                         if (smoothedRms > speechThreshold * 0.9) {
                             gateTarget = 1;
                         } else if (smoothedRms > noiseFloorRms * 1.8) {
-                            gateTarget = 0.45;
+                            gateTarget = 0.35;
                         } else {
-                            gateTarget = 0.07;
+                            gateTarget = 0.05;
                         }
+                    } else if (smoothedRms > speechThreshold * 0.85) {
+                        gateTarget = 1;
+                    } else if (smoothedRms > noiseFloorRms * 2.2) {
+                        gateTarget = 0.35;
                     } else {
-                        gateTarget = smoothedRms > speechThreshold * 0.85 ? 1 : 0.28;
+                        gateTarget = 0.1;
                     }
 
                     processingNodes.gate.gain.setTargetAtTime(gateTarget, ctx.currentTime, 0.03);
@@ -1138,8 +1142,27 @@
                     socket.emit('update-nickname', apelidoLocal);
                     const caixaLocal = document.getElementById(`caixa-${socket.id}`);
                     if (caixaLocal) {
-                        caixaLocal.innerHTML = `<label style="display:block; margin-bottom:4px;">🐵 Vol. ${apelidoLocal}:</label>
-                            <input type="range" min="0" max="1" step="0.1" value="1" oninput="document.getElementById('audio-${socket.id}').volume = this.value">`;
+                        caixaLocal.innerHTML = '';
+
+                        const label = document.createElement('label');
+                        label.style.display = 'block';
+                        label.style.marginBottom = '4px';
+                        label.textContent = `🐵 Vol. ${apelidoLocal}:`;
+
+                        const slider = document.createElement('input');
+                        slider.type = 'range';
+                        slider.min = '0';
+                        slider.max = '1';
+                        slider.step = '0.1';
+                        slider.value = '1';
+                        slider.setAttribute('aria-label', `Volume de ${apelidoLocal}`);
+                        slider.addEventListener('input', () => {
+                            const audioEl = document.getElementById(`audio-${socket.id}`);
+                            if (audioEl) audioEl.volume = slider.value;
+                        });
+
+                        caixaLocal.appendChild(label);
+                        caixaLocal.appendChild(slider);
                     }
                     adicionarMensagemNaTela('Sistema', `Seu apelido mudou para ${apelidoLocal}.`, true);
                 }
@@ -1276,8 +1299,27 @@
                 const amigoBox = document.createElement('div');
                 amigoBox.className = 'amigo-box';
                 amigoBox.id = `caixa-${userId}`;
-                amigoBox.innerHTML = `<label id="label-${userId}" style="display:block; margin-bottom:4px;">🐵 Vol. ${userNickname}:</label>
-                    <input type="range" min="0" max="1" step="0.1" value="1" oninput="document.getElementById('audio-${userId}').volume = this.value">`;
+
+                const label = document.createElement('label');
+                label.id = `label-${userId}`;
+                label.style.display = 'block';
+                label.style.marginBottom = '4px';
+                label.textContent = `🐵 Vol. ${userNickname}:`;
+
+                const slider = document.createElement('input');
+                slider.type = 'range';
+                slider.min = '0';
+                slider.max = '1';
+                slider.step = '0.1';
+                slider.value = '1';
+                slider.setAttribute('aria-label', `Volume de ${userNickname}`);
+                slider.addEventListener('input', () => {
+                    const audioEl = document.getElementById(`audio-${userId}`);
+                    if (audioEl) audioEl.volume = slider.value;
+                });
+
+                amigoBox.appendChild(label);
+                amigoBox.appendChild(slider);
                 
                 const audio = document.createElement('audio');
                 audio.id = `audio-${userId}`;

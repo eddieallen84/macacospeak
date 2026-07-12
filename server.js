@@ -73,6 +73,16 @@ function emitirPresencaGlobal() {
     emitirOnlineCount();
 }
 
+const VALID_ROOMS = new Set(['arvore-1', 'arvore-2']);
+const MAX_NICKNAME_LEN = 20;
+const MAX_MESSAGE_LEN = 300;
+
+function sanitizarApelido(nickname) {
+    if (typeof nickname !== 'string') return 'Macaquinho';
+    const limpo = nickname.trim().slice(0, MAX_NICKNAME_LEN);
+    return limpo || 'Macaquinho';
+}
+
 io.on('connection', (socket) => {
     socket.emit('ice-config', iceServers);
     socket.emit('room-counts', getRoomCounts());
@@ -80,12 +90,13 @@ io.on('connection', (socket) => {
     
     // Quando um macaco entra na árvore
     socket.on('join-room', (roomId, nickname) => {
+        if (!VALID_ROOMS.has(roomId)) return;
         socket.join(roomId);
-        users[socket.id] = { room: roomId, nickname: nickname };
+        users[socket.id] = { room: roomId, nickname: sanitizarApelido(nickname) };
         emitirPresencaGlobal();
         
         // Avisa os outros que ele chegou
-        socket.to(roomId).emit('user-connected', socket.id, nickname);
+        socket.to(roomId).emit('user-connected', socket.id, users[socket.id].nickname);
         
         // Manda a lista de quem já tá na sala pro novato
         const usersInRoom = {};
@@ -107,15 +118,16 @@ io.on('connection', (socket) => {
 
     // Chat de texto
     socket.on('chat-message', (roomId, msg) => {
-        if (users[socket.id]) {
-            socket.to(roomId).emit('chat-message', socket.id, users[socket.id].nickname, msg);
+        if (users[socket.id] && typeof msg === 'string' && msg.trim() && VALID_ROOMS.has(roomId)) {
+            socket.to(roomId).emit('chat-message', socket.id, users[socket.id].nickname, msg.slice(0, MAX_MESSAGE_LEN));
         }
     });
 
     // Atualiza apelido em tempo real sem precisar sair da sala
     socket.on('update-nickname', (newNickname) => {
-        const normalized = typeof newNickname === 'string' ? newNickname.trim() : '';
-        if (!normalized || !users[socket.id]) return;
+        if (!users[socket.id]) return;
+        const normalized = sanitizarApelido(newNickname);
+        if (!normalized) return;
 
         users[socket.id].nickname = normalized;
         const roomId = users[socket.id].room;
