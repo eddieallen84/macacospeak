@@ -180,10 +180,10 @@
             const label = document.getElementById(`label-${userId}`);
             const caixa = document.getElementById(`caixa-${userId}`);
             if (!label) return;
-            
+
             const nick = remoteVariables[userId] || 'Amiguinho';
             const falando = !!remoteSpeakingState[userId];
-            
+
             // Texto sem o "Vol."
             label.textContent = falando ? `🔊 ${nick}:` : `🐵 ${nick}:`;
 
@@ -194,7 +194,7 @@
                     hash = (hash * 31 + nick.charCodeAt(i)) & 0xffffffff;
                 }
                 const matiz = Math.abs(hash) % 360;
-                
+
                 caixa.style.backgroundColor = `hsl(${matiz}, 65%, 85%)`;
                 caixa.style.borderColor = `hsl(${matiz}, 50%, 50%)`;
                 label.style.color = `hsl(${matiz}, 80%, 25%)`;
@@ -392,10 +392,10 @@
         window.addEventListener('resize', ajustarEspacamentoChatPorTopbar);
 
         function getAudioConstraints() {
-            const constraints = {
+            const restricoesAudio = {
                 echoCancellation: { ideal: true },
-                noiseSuppression: { ideal: false },
-                autoGainControl: { ideal: false },
+                noiseSuppression: { ideal: true }, // Agora ativado, igual ao Discord
+                autoGainControl: { ideal: true },  // Agora ativado, igual ao Discord
                 channelCount: { ideal: 1 },
                 sampleRate: { ideal: 48000 },
                 sampleSize: { ideal: 16 },
@@ -403,10 +403,10 @@
             };
 
             if (dispositivoMicSelecionado) {
-                constraints.deviceId = { exact: dispositivoMicSelecionado };
+                restricoesAudio.deviceId = { exact: dispositivoMicSelecionado };
             }
 
-            return constraints;
+            return restricoesAudio;
         }
 
         function atualizarTrackNosPeers(track) {
@@ -891,7 +891,7 @@
 
                         caixaLocal.appendChild(label);
                         caixaLocal.appendChild(slider);
-                        
+
                         let hash = 0;
                         for (let i = 0; i < variavelLocal.length; i++) {
                             hash = (hash * 31 + variavelLocal.charCodeAt(i)) & 0xffffffff;
@@ -1057,12 +1057,23 @@
             if (peers[userId]) return peers[userId];
 
             const peer = new RTCPeerConnection({ iceServers: rtcIceServers });
-            peer.onicecandidate = (e) => { if (e.candidate) socket.emit('signal', userId, { candidate: e.candidate }); };
 
-            peer.ontrack = (e) => {
+            peer.onicecandidate = (eventoIce) => {
+                if (eventoIce.candidate) {
+                    socket.emit('signal', userId, { candidate: eventoIce.candidate });
+                }
+            };
+
+            peer.ontrack = (eventoTrack) => {
                 if (document.getElementById(`caixa-${userId}`)) return;
-                const actualName = remoteVariables[userId] || userVariavel || "Amiguinho";
-                remoteVariables[userId] = actualName;
+
+                // Mantém a variavel correta sem forçar sobrescrita precoce se ocorrer delay
+                const nomeReal = remoteVariables[userId] || userVariavel;
+                const nomeFinal = nomeReal || "Amiguinho";
+
+                if (nomeReal) {
+                    remoteVariables[userId] = nomeReal;
+                }
 
                 const amigoBox = document.createElement('div');
                 amigoBox.className = 'amigo-box';
@@ -1072,7 +1083,7 @@
                 label.id = `label-${userId}`;
                 label.style.display = 'block';
                 label.style.marginBottom = '4px';
-                label.textContent = `🐵 ${actualName}:`;
+                label.textContent = `🐵 ${nomeFinal}:`;
 
                 const slider = document.createElement('input');
                 slider.type = 'range';
@@ -1080,7 +1091,7 @@
                 slider.max = '1';
                 slider.step = '0.1';
                 slider.value = '1';
-                slider.setAttribute('aria-label', `Volume de ${actualName}`);
+                slider.setAttribute('aria-label', `Volume de ${nomeFinal}`);
                 slider.addEventListener('input', () => {
                     const audioEl = document.getElementById(`audio-${userId}`);
                     if (audioEl) audioEl.volume = slider.value;
@@ -1091,15 +1102,15 @@
 
                 const audio = document.createElement('audio');
                 audio.id = `audio-${userId}`;
-                audio.srcObject = e.streams[0];
+                audio.srcObject = eventoTrack.streams[0];
                 audio.autoplay = true;
 
                 document.getElementById('lista-amigos').appendChild(amigoBox);
                 document.getElementById('audios').appendChild(audio);
-                iniciarDetectorFalaRemota(userId, e.streams[0]);
+                iniciarDetectorFalaRemota(userId, eventoTrack.streams[0]);
 
                 verificarListaVazia();
-                atualizarTituloAmigo(userId); 
+                atualizarTituloAmigo(userId);
             };
 
             peers[userId] = peer;
@@ -1222,6 +1233,19 @@
                 mostrarToast(isNoiseSuppressed ? '🎧 Filtro Mágico ligado! Ele só age quando você não tá falando.' : '🎧 Filtro Mágico desligado.');
                 avaliarQualidadeMicrofone(performance.now(), false);
             }
+        }
+
+        const inputNome = document.getElementById('txt-variavel');
+        if (inputNome) {
+            inputNome.addEventListener('input', (eventoTexto) => {
+                const textoDigitado = eventoTexto.target.value.trim();
+                if (textoDigitado) {
+                    variavelLocal = textoDigitado;
+                    try {
+                        localStorage.setItem(variavelStorageKey, variavelLocal);
+                    } catch (erroCache) { }
+                }
+            });
         }
     </script>
 </body>
