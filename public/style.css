@@ -15,9 +15,10 @@ select {
          * O aplicativo inteiro puxa as cores daqui. Quando o tema muda, as variáveis mudam!
          */
 body {
-    font-family: 'Comic Sans MS', 'Chalkboard SE', 'Marker Felt', sans-serif;
+    font-family: 'Baloo 2', 'Comic Sans MS', 'Chalkboard SE', 'Marker Felt', sans-serif;
     display: flex;
     height: 100vh;
+    height: 100dvh; /* navegadores que suportam ignoram a linha de cima e usam essa (sem cortar atrás da barra de endereço no celular) */
     overflow: hidden;
     /* Suaviza a troca de temas */
     transition: background-color 0.5s ease, background-image 0.5s ease;
@@ -764,4 +765,38 @@ input[type="range"] {
     padding: 20px;
     text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5);
     border-radius: 20px 0 0 20px;
+}
+
+/* --- LAYOUT PARA TELA ESTREITA (CELULAR) ---
+   Sem isso, a sidebar de 280px fixos comia quase a tela toda num celular e sobrava
+   um fiapo pro chat. Agora ela empilha em cima, com altura limitada e rolagem própria. */
+@media (max-width: 700px) {
+    body {
+        flex-direction: column;
+        height: 100dvh;
+    }
+
+    .sidebar {
+        width: 100%;
+        max-height: 46vh;
+        border-right: none;
+        border-bottom: 3px solid var(--t-border);
+        padding: 10px 12px;
+        flex-shrink: 1;
+    }
+
+    .sidebar h2 {
+        font-size: 20px;
+        margin-bottom: 8px;
+    }
+
+    .chat-area {
+        min-height: 0;
+        flex: 1 1 auto;
+    }
+
+    #overlay-bloqueio {
+        border-radius: 0;
+        font-size: 20px;
+    }
 }

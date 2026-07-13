@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MacacoSpeak 🍌</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/style.css">
 </head>
 <!-- Chuva de Banana definida como o padrao inicial de novo -->
@@ -334,8 +337,22 @@
             atualizarBotoesSalas();
         });
 
+        let socketJaConectouAntes = false;
+
         socket.on('connect', () => {
             atualizarStatusConexao('Conectado', 'online');
+
+            if (socketJaConectouAntes && salaAtual) {
+                // Reconexão de verdade (não a primeira vez): o servidor já te tirou da sala quando
+                // a conexão caiu, então por fora tudo parece normal ("Conectado" verde) mas você não
+                // está mais em nenhuma sala - chat e voz ficariam mudos sem ninguém perceber o porquê.
+                const salaParaVoltar = salaAtual;
+                salaAtual = null;
+                mostrarToast('🔌 A conexão caiu e voltou! Te colocando de volta na árvore...');
+                entrarNaSala(salaParaVoltar, { reconectando: true });
+            }
+
+            socketJaConectouAntes = true;
         });
 
         socket.on('disconnect', () => {
@@ -916,7 +933,9 @@
             } catch(e) {}
         }
 
-        async function entrarNaSala(nomeSala) {
+        async function entrarNaSala(nomeSala, opcoes) {
+            const reconectando = !!opcoes?.reconectando;
+
             if (!apelidoLocal) {
                 alert("Escreva seu nome e clique em OK primeiro!");
                 return;
@@ -946,7 +965,7 @@
 
                     document.getElementById('lista-amigos').innerHTML = '';
                     document.getElementById('audios').innerHTML = '';
-                    document.getElementById('chat-messages').innerHTML = '';
+                    if (!reconectando) document.getElementById('chat-messages').innerHTML = '';
                     for (let id in peers) {
                         peers[id].close();
                         delete peers[id];
@@ -959,9 +978,14 @@
                     
                     document.getElementById('controles-sala').style.display = 'block';
                     document.getElementById('overlay-bloqueio').style.display = 'none';
-                    
-                    tocarSomSintetizado('entrar');
-                    mostrarToast(`Entrou na ${nomeSala.replace('-', ' ')}`);
+
+                    if (!reconectando) {
+                        tocarSomSintetizado('entrar');
+                        mostrarToast(`Entrou na ${nomeSala.replace('-', ' ')}`);
+                    } else {
+                        mostrarToast('🐵 De volta na árvore!');
+                        adicionarMensagemNaTela('Sistema', 'Reconectado! (a conexão caiu por um instante)', true);
+                    }
                     verificarListaVazia();
                 });
             } catch (error) {
@@ -986,9 +1010,13 @@
 
         async function configurarConexaoAmigo(userId, userNickname, criarOferta) {
             const peer = criarPeer(userId, userNickname);
-            const streamParaEnvio = localProcessedStream || localStream;
-            streamParaEnvio.getTracks().forEach(track => peer.addTrack(track, streamParaEnvio));
-            
+            const jaTemAudioSaindo = peer.getSenders().some((s) => s.track && s.track.kind === 'audio');
+
+            if (!jaTemAudioSaindo) {
+                const streamParaEnvio = localProcessedStream || localStream;
+                streamParaEnvio.getTracks().forEach(track => peer.addTrack(track, streamParaEnvio));
+            }
+
             if (criarOferta) {
                 const offer = await peer.createOffer();
                 await peer.setLocalDescription(offer);
