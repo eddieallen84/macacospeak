@@ -45,6 +45,26 @@
             <button id="btn-config-audio" class="btn-config-audio" onclick="alternarPainelAudio()">⚙️ Configurações de
                 Áudio</button>
             <div id="painel-audio" class="painel-audio" style="display: none;">
+                <div class="painel-audio-secao-titulo">🎯 Padrão (sempre ativo)</div>
+                <p class="painel-audio-dica painel-audio-dica-padrao">
+                    🤖 Sensibilidade automática: calibrada sozinha quando você entra na árvore.<br>
+                    🔊 Cancelamento de eco: sempre ligado.
+                </p>
+
+                <div class="painel-audio-divisor"></div>
+                <div class="painel-audio-secao-titulo">🧠 Avançado</div>
+
+                <label class="painel-audio-label painel-audio-toggle-label" for="toggle-isolamento-voz">
+                    <span>🧠 Isolamento de Voz</span>
+                    <label class="mini-switch">
+                        <input type="checkbox" id="toggle-isolamento-voz"
+                            onchange="alternarIsolamentoVoz(this.checked)">
+                        <span class="mini-switch-trilho"></span>
+                    </label>
+                </label>
+                <p class="painel-audio-dica">Supressão de ruído do próprio navegador. Deixa a voz mais "limpa", mas
+                    em alguns mics pode fazer o macaquinho pular menos. Se acontecer, é só desligar de novo.</p>
+
                 <label class="painel-audio-label" for="slider-ganho">🎚️ Ganho de entrada: <span
                         id="valor-ganho">1.0x</span></label>
                 <input type="range" id="slider-ganho" min="1" max="3" step="0.1" value="1"
@@ -124,10 +144,14 @@
         let processingNodes = null;
         let currentAudioTrack = null;
         let currentGateGain = 1;
-        let nivelPicoRecente = 0.04;
         let dispositivoMicSelecionado = null;
         let ganhoEntradaAtual = 1;
         let forcaCorteRuido = 0.05;
+        // Isolamento de Voz = a supressão de ruído NATIVA do navegador (recurso avançado, tipo o Krisp
+        // do Discord). Fica DESLIGADA por padrão porque processa o áudio inteiro de forma imprevisível
+        // e "engolia" a voz - foi isso que fez o macaquinho parar de pular. Quem cuida do ruído por
+        // padrão é o nosso próprio Filtro Mágico (gate), que nunca abafa a voz.
+        let isolamentoVozAtivo = false;
         const speakThreshold = 0.028;
         const speakHoldMs = 220;
         let roomCounts = { 'arvore-1': 0, 'arvore-2': 0 };
@@ -137,6 +161,7 @@
         const ganhoStorageKey = 'macacospeak.ganho';
         const forcaGateStorageKey = 'macacospeak.forcaGate';
         const microfoneStorageKey = 'macacospeak.microfone';
+        const isolamentoVozStorageKey = 'macacospeak.isolamentoVoz';
         let toastTimer = null;
         let remoteAudioContext = null;
         const remoteSpeakingState = {};
@@ -230,7 +255,7 @@
             if (!remoteAudioContext || remoteAudioContext.state === 'closed') {
                 remoteAudioContext = new AudioContextClass();
             }
-            
+
             // CORREÇÃO: Força o contexto de áudio remoto a acordar caso esteja suspenso pelo navegador
             if (remoteAudioContext.state === 'suspended') {
                 remoteAudioContext.resume();
@@ -402,8 +427,11 @@
 
         function getAudioConstraints() {
             const restricoesAudio = {
+                // Cancelamento de eco: sempre ativo (é padrão em qualquer chamada, sem efeito colateral na detecção de voz).
                 echoCancellation: { ideal: true },
-                noiseSuppression: { ideal: true }, // Agora ativado, igual ao Discord
+                // Isolamento de Voz nativo: só liga se o usuário ativar em "Avançado". É pesado e imprevisível
+                // (processa a voz inteira), então some no perfil padrão pra não travar a detecção de fala.
+                noiseSuppression: { ideal: isolamentoVozAtivo },
                 autoGainControl: { ideal: false }, // Desligado de propósito: o ganho manual + compressor/limiter abaixo já cuidam do nível, e dois AGCs disputando causavam "bombeamento" no volume
                 channelCount: { ideal: 1 },
                 sampleRate: { ideal: 48000 },
@@ -438,7 +466,13 @@
                 };
             }
 
-            const ctx = new AudioContextClass({ sampleRate: 48000 });
+            // REUTILIZA O CONTEXTO GLOBAL PARA NÃO PERDER O DESBLOQUEIO
+            if (!processingAudioContext || processingAudioContext.state === 'closed') {
+                processingAudioContext = new AudioContextClass({ sampleRate: 48000 });
+            }
+            const ctx = processingAudioContext;
+            if (ctx.state === 'suspended') ctx.resume();
+
             const source = ctx.createMediaStreamSource(stream);
 
             const inputGain = ctx.createGain();
@@ -495,7 +529,6 @@
             const outputDestination = ctx.createMediaStreamDestination();
 
             source.connect(inputGain);
-            inputGain.connect(analyser);
             inputGain.connect(highpass);
             highpass.connect(lowShelf);
             lowShelf.connect(mudCut);
@@ -503,6 +536,11 @@
             presenceBoost.connect(lowpass);
             lowpass.connect(compressor);
             compressor.connect(limiter);
+            // O analyser (medidor + detector de fala/pulo do macaco) escuta AQUI, depois do compressor/limiter -
+            // ou seja, o MESMO sinal já "turbinado" que realmente sai no áudio. Antes ele lia o sinal cru
+            // (logo após o ganho de entrada), que podia ser bem mais fraco que o áudio final - por isso
+            // o áudio saía bem pros outros, mas o macaco continuava parado.
+            limiter.connect(analyser);
             limiter.connect(gate);
             gate.connect(outputDestination);
 
@@ -552,10 +590,6 @@
             }
 
             processingNodes = null;
-
-            if (processingAudioContext && processingAudioContext.state !== 'closed') {
-                processingAudioContext.close().catch(() => { });
-            }
 
             processingAudioContext = null;
             localProcessedStream = null;
@@ -677,7 +711,27 @@
 
                 const micSalvo = localStorage.getItem(microfoneStorageKey);
                 if (micSalvo) dispositivoMicSelecionado = micSalvo;
+
+                isolamentoVozAtivo = localStorage.getItem(isolamentoVozStorageKey) === '1';
+                const toggleIsolamento = document.getElementById('toggle-isolamento-voz');
+                if (toggleIsolamento) toggleIsolamento.checked = isolamentoVozAtivo;
             } catch (err) { }
+        }
+
+        async function alternarIsolamentoVoz(ativo) {
+            isolamentoVozAtivo = !!ativo;
+            try { localStorage.setItem(isolamentoVozStorageKey, isolamentoVozAtivo ? '1' : '0'); } catch (err) { }
+
+            if (!localStream) return;
+
+            try {
+                await reiniciarCapturaMicrofone();
+                mostrarToast(isolamentoVozAtivo
+                    ? '🧠 Isolamento de Voz ligado! Se o macaquinho parar de pular, desative de novo.'
+                    : '🧠 Isolamento de Voz desligado.');
+            } catch (e) {
+                mostrarToast('😬 Não consegui aplicar o Isolamento de Voz.');
+            }
         }
 
         async function listarMicrofones() {
@@ -785,11 +839,14 @@
                 await new Promise((resolve) => setTimeout(resolve, 30));
             }
 
-            const ruidoMedio = amostras > 0 ? somaRms / amostras : speakThreshold;
+            let ruidoMedio = amostras > 0 ? somaRms / amostras : 0.015;
+            
+            // O SEGREDO AQUI: Limita o teto do ruído de fundo para que sons altos na entrada não quebrem o sensor.
+            ruidoMedio = Math.min(0.015, ruidoMedio);
+
             noiseFloorRms = ruidoMedio;
-            dynamicSpeakThreshold = Math.max(0.015, Math.min(0.08, ruidoMedio * 2.6));
+            dynamicSpeakThreshold = Math.max(0.015, ruidoMedio * 2.2);
             smoothedRms = noiseFloorRms;
-            nivelPicoRecente = Math.max(0.04, dynamicSpeakThreshold * 2);
         }
 
         async function iniciarDetectorDeFala() {
@@ -816,31 +873,32 @@
                 smoothedRms = smoothedRms * 0.86 + rms * 0.14;
                 const agora = performance.now();
 
-                const speechThreshold = dynamicSpeakThreshold;
+                // Deixando o gatilho do macaquinho um pouco mais sensível para sincronizar perfeitamente com a barra visual
+                const speechThreshold = dynamicSpeakThreshold * 0.8;
+                
                 if (smoothedRms > speechThreshold) speakingUntil = agora + speakHoldMs;
                 const estaFalando = agora < speakingUntil;
 
-                nivelPicoRecente = Math.max(smoothedRms, nivelPicoRecente * 0.992);
-                const nivelReferencia = Math.max(0.015, nivelPicoRecente);
-                const nivelNormalizado = Math.min(1, smoothedRms / nivelReferencia);
-                const intensidadePulo = 0.5 + nivelNormalizado * 2.3;
+                // Referência FIXA calibrada (igual ao detector dos amiguinhos remotos) em vez de um "pico
+                // recente" que ficava fugindo pra cima a cada som mais alto - isso fazia a voz normal
+                // parecer cada vez mais fraca com o tempo e o macaco "parar de pular" na prática.
+                // Com voz normal o pulo já fica quase no talo; gritar só bate no teto (não passa disso).
+                const nivelNormalizado = Math.min(1, smoothedRms / (dynamicSpeakThreshold * 3.2));
+                const intensidadePulo = 0.5 + nivelNormalizado * 1.8;
 
                 let gateTarget = 1;
                 if (processingNodes?.gate?.gain) {
                     if (isMuted) {
                         gateTarget = 0;
-                    } else if (smoothedRms > speechThreshold * 0.85) {
+                    } else if (smoothedRms > speechThreshold) {
                         gateTarget = 1;
                     } else if (isNoiseSuppressed) {
                         gateTarget = smoothedRms > noiseFloorRms * 1.8
                             ? Math.min(0.3, forcaCorteRuido * 3)
                             : forcaCorteRuido;
                     } else {
-                        // Filtro Mágico desligado: não atenua nada nos intervalos sem fala,
-                        // como o texto da interface promete.
                         gateTarget = 1;
                     }
-
                     processingNodes.gate.gain.setTargetAtTime(gateTarget, ctx.currentTime, 0.03);
                 }
                 currentGateGain = gateTarget;
@@ -1003,23 +1061,22 @@
                 return;
             }
 
+            // --- NOVO: DESBLOQUEIO IMEDIATO DE ÁUDIO ---
+            // Fazemos isso antes de qualquer "await" para aproveitar a intenção do clique!
+            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            if (AudioContextClass) {
+                if (!remoteAudioContext) remoteAudioContext = new AudioContextClass();
+                if (remoteAudioContext.state === 'suspended') remoteAudioContext.resume();
+
+                if (!processingAudioContext) processingAudioContext = new AudioContextClass({ sampleRate: 48000 });
+                if (processingAudioContext.state === 'suspended') processingAudioContext.resume();
+            }
+
             try {
                 await prepararMicrofoneInicial();
-                
-                // CORREÇÃO: Força o contexto de áudio remoto a acordar mediante a interação do usuário
-                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-                if (AudioContextClass) {
-                    if (!remoteAudioContext) remoteAudioContext = new AudioContextClass();
-                    if (remoteAudioContext.state === 'suspended') remoteAudioContext.resume();
-                }
 
                 const salaAnterior = salaAtual;
 
-                // IMPORTANTE: a limpeza dos peers/cards da sala anterior precisa
-                // acontecer ANTES de emitir 'join-room'. O servidor manda o evento
-                // 'current-room-users' (que já cria os cards de quem está na sala)
-                // antes de confirmar o callback do join-room — se limpássemos DEPOIS,
-                // apagaríamos os cards recém-criados assim que eles apareciam.
                 if (salaAnterior && salaAnterior !== nomeSala) {
                     socket.emit('leave-room', salaAnterior);
                 }
@@ -1377,8 +1434,15 @@
             }
         }
 
-        /* CORREÇÃO: Removido o event listener de 'input' do txt-variavel para evitar dessincronização */
-        
+       document.body.addEventListener('click', () => {
+            if (processingAudioContext && processingAudioContext.state === 'suspended') {
+                processingAudioContext.resume();
+            }
+            if (remoteAudioContext && remoteAudioContext.state === 'suspended') {
+                remoteAudioContext.resume();
+            }
+        });
+
     </script>
 </body>
 
