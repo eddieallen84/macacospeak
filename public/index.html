@@ -230,6 +230,11 @@
             if (!remoteAudioContext || remoteAudioContext.state === 'closed') {
                 remoteAudioContext = new AudioContextClass();
             }
+            
+            // CORREÇÃO: Força o contexto de áudio remoto a acordar caso esteja suspenso pelo navegador
+            if (remoteAudioContext.state === 'suspended') {
+                remoteAudioContext.resume();
+            }
 
             let source;
             try {
@@ -1000,6 +1005,13 @@
 
             try {
                 await prepararMicrofoneInicial();
+                
+                // CORREÇÃO: Força o contexto de áudio remoto a acordar mediante a interação do usuário
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                if (AudioContextClass) {
+                    if (!remoteAudioContext) remoteAudioContext = new AudioContextClass();
+                    if (remoteAudioContext.state === 'suspended') remoteAudioContext.resume();
+                }
 
                 const salaAnterior = salaAtual;
 
@@ -1365,18 +1377,8 @@
             }
         }
 
-        const inputNome = document.getElementById('txt-variavel');
-        if (inputNome) {
-            inputNome.addEventListener('input', (eventoTexto) => {
-                const textoDigitado = eventoTexto.target.value.trim();
-                if (textoDigitado) {
-                    variavelLocal = textoDigitado;
-                    try {
-                        localStorage.setItem(variavelStorageKey, variavelLocal);
-                    } catch (erroCache) { }
-                }
-            });
-        }
+        /* CORREÇÃO: Removido o event listener de 'input' do txt-variavel para evitar dessincronização */
+        
     </script>
 </body>
 
