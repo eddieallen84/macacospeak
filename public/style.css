@@ -612,7 +612,11 @@ select:focus-visible {
 }
 
 .chat-topbar .seletor-cenario #select-fundo {
-    margin-top: 0;
+    width: 100%;
+    padding: 4px 10px;
+    border-radius: 10px;
+    margin-top: 8px;
+    height: auto;
 }
 
 .chat-topbar-esquerda {
@@ -977,13 +981,6 @@ input[type="range"] {
     box-shadow: none;
 }
 
-#select-fundo {
-    width: 100%;
-    padding: 8px;
-    border-radius: 10px;
-    margin-top: 8px;
-}
-
 /* TELA DE BLOQUEIO MANTIDA TRANSLÚCIDA */
 #overlay-bloqueio {
     position: absolute;
@@ -1090,4 +1087,9 @@ input[type="range"] {
         opacity: 0;
         transform: translate(calc(-50% + var(--dx, 0px)), calc(-50% + var(--dy, -60px))) scale(1.1) rotate(var(--rot, 90deg));
     }
+}
+
+/* Oculta o card local para exibir apenas os amigos na sala */
+#caixa-local {
+    display: none !important;
 }
