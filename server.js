@@ -109,6 +109,14 @@ io.on('connection', (socket) => {
             return;
         }
 
+        // CORREÇÃO: Tratamento atômico de troca de sala
+        // Se o usuário já estava em uma sala, remove ele da antiga antes de colocar na nova
+        if (users[socket.id] && users[socket.id].room !== roomId) {
+            const salaAntiga = users[socket.id].room;
+            socket.leave(salaAntiga);
+            socket.to(salaAntiga).emit('user-disconnected', socket.id);
+        }
+
         socket.join(roomId);
         users[socket.id] = { room: roomId, variavel: variavelLimpa };
         emitirPresencaGlobal();
