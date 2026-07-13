@@ -18,7 +18,7 @@
         <h2><span class="emoji-titulo">🐵</span> MacacoSpeak</h2>
 
         <div class="variavel-container">
-            <label>Suba seu Nome:</label>
+            <label for="txt-variavel">Suba seu Nome:</label>
             <div class="input-group">
                 <input type="text" id="txt-variavel" placeholder="Macaquinho..." autocomplete="off">
                 <button id="btn-ok-variavel" onclick="salvarVariavel()" title="Salvar nome">✔️</button>
@@ -99,7 +99,7 @@
                 <span id="status-sala-topo" class="badge-status">Sozinho na sala 🎈</span>
             </div>
             <div class="seletor-cenario">
-                <label>Escolha o Cenário:</label>
+                <label for="select-fundo">Escolha o Cenário:</label>
                 <select id="select-fundo" onchange="alterarFundo(this.value, event)">
                     <option value="banana">🍌 Chuva de Banana</option>
                     <option value="autista">🧩 Macaco Autista Dino & ET</option>
