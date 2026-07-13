@@ -118,7 +118,7 @@ io.on('connection', (socket) => {
         }
 
         socket.join(roomId);
-        users[socket.id] = { room: roomId, variavel: variavelLimpa };
+        users[socket.id] = { room: roomId, variavel: variavelLimpa, muted: false };
         emitirPresencaGlobal();
         
         // Avisa os outros que ele chegou
@@ -130,7 +130,7 @@ io.on('connection', (socket) => {
         if (room) {
             for (let id of room) {
                 if (id !== socket.id && users[id]) {
-                    usersInRoom[id] = users[id].variavel;
+                    usersInRoom[id] = { variavel: users[id].variavel, muted: !!users[id].muted };
                 }
             }
         }
@@ -170,6 +170,14 @@ io.on('connection', (socket) => {
         socket.to(roomId).emit('user-nickname-updated', socket.id, normalized);
 
         if (typeof callback === 'function') callback({ ok: true, variavel: normalized });
+    });
+
+    // Avisa a sala que esse macaco mutou/desmutou o mic
+    socket.on('update-mute', (muted) => {
+        if (!users[socket.id]) return;
+        const mutedBool = !!muted;
+        users[socket.id].muted = mutedBool;
+        socket.to(users[socket.id].room).emit('user-mute-updated', socket.id, mutedBool);
     });
 
     // Quando o macaco clica no botão de sair

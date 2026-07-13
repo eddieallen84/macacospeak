@@ -95,6 +95,8 @@
     <div class="chat-area">
         <div class="chat-topbar">
             <div class="chat-topbar-esquerda">
+                <button id="btn-toggle-sidebar" class="btn-toggle-sidebar" onclick="alternarSidebar()"
+                    title="Mostrar/ocultar configurações">🔼 Config</button>
                 <span id="status-conexao" class="badge-status connecting">Conectando...</span>
                 <span id="status-sala-topo" class="badge-status">Sozinho na sala 🎈</span>
             </div>
@@ -163,12 +165,14 @@
         const forcaGateStorageKey = 'macacospeak.forcaGate';
         const microfoneStorageKey = 'macacospeak.microfone';
         const isolamentoVozStorageKey = 'macacospeak.isolamentoVoz';
+        const sidebarOcultaStorageKey = 'macacospeak.sidebarOculta';
         let toastTimer = null;
         let remoteAudioContext = null;
         const remoteSpeakingState = {};
         const remoteAnalysers = {};
         const remoteRafIds = {};
         const remoteVariables = {};
+        const remoteMutedState = {};
 
         function mostrarToast(texto) {
             const toast = document.getElementById('toast-feedback');
@@ -212,9 +216,12 @@
 
             const nick = remoteVariables[userId] || 'Amiguinho';
             const falando = !!remoteSpeakingState[userId];
+            const mutado = !!remoteMutedState[userId];
 
             // Texto sem o "Vol."
-            label.textContent = falando ? `🔊 ${nick}:` : `🐵 ${nick}:`;
+            label.textContent = mutado ? `🔇 ${nick} (mutado):` : falando ? `🔊 ${nick}:` : `🐵 ${nick}:`;
+
+            if (caixa) caixa.classList.toggle('usuario-mutado', mutado);
 
             // Aplica cor dinâmica baseada no nome
             if (caixa) {
@@ -321,6 +328,7 @@
             delete remoteAnalysers[userId];
             delete remoteSpeakingState[userId];
             delete remoteVariables[userId];
+            delete remoteMutedState[userId];
         }
 
         function getTextoStatusSala(totalNaSala) {
@@ -666,6 +674,25 @@
             btn.style.borderColor = isNoiseSuppressed ? '#D980FA' : '#C44569';
             btn.style.boxShadow = isNoiseSuppressed ? '0 4px 0 #D980FA' : '0 4px 0 #C44569';
         }
+
+        // No celular a sidebar toma quase metade da tela. Esse botão deixa o
+        // macaquinho escondê-la pra ver só o chat, e mostrar de novo quando quiser.
+        function alternarSidebar(forcarEstado) {
+            const btn = document.getElementById('btn-toggle-sidebar');
+            const oculta = typeof forcarEstado === 'boolean'
+                ? forcarEstado
+                : !document.body.classList.contains('sidebar-oculta');
+
+            document.body.classList.toggle('sidebar-oculta', oculta);
+            if (btn) btn.textContent = oculta ? '🔽 Config' : '🔼 Config';
+            try { localStorage.setItem(sidebarOcultaStorageKey, oculta ? '1' : '0'); } catch (err) { }
+        }
+
+        try {
+            if (localStorage.getItem(sidebarOcultaStorageKey) === '1') {
+                alternarSidebar(true);
+            }
+        } catch (err) { }
 
         function alternarPainelAudio() {
             const painel = document.getElementById('painel-audio');
@@ -1113,6 +1140,7 @@
 
                     salaAtual = nomeSala;
                     try { localStorage.setItem(lastRoomStorageKey, nomeSala); } catch (err) { }
+                    if (isMuted) socket.emit('update-mute', true);
 
                     if (!reconectando) document.getElementById('chat-messages').innerHTML = '';
 
@@ -1145,15 +1173,26 @@
 
         socket.on('current-room-users', (usuarios) => {
             for (const id in usuarios) {
-                remoteVariables[id] = usuarios[id];
-                configurarConexaoAmigo(id, usuarios[id], false);
+                const info = usuarios[id];
+                const nomeUsuario = (info && typeof info === 'object') ? info.variavel : info;
+                remoteVariables[id] = nomeUsuario;
+                remoteMutedState[id] = !!(info && info.muted);
+                configurarConexaoAmigo(id, nomeUsuario, false);
                 atualizarTituloAmigo(id);
             }
+        });
+
+        socket.on('user-mute-updated', (userId, muted) => {
+            remoteMutedState[userId] = !!muted;
+            atualizarTituloAmigo(userId);
+            const nome = remoteVariables[userId] || 'Um macaquinho';
+            adicionarMensagemNaTela('Sistema', muted ? `🔇 ${nome} está mutado.` : `🔊 ${nome} desmutou o microfone.`, false);
         });
 
         socket.on('user-connected', async (userId, userVariavel) => {
             remoteVariables[userId] = userVariavel;
             tocarSomSintetizado('entrar');
+            adicionarMensagemNaTela('Sistema', `🐵 ${userVariavel} subiu na árvore!`, false);
             configurarConexaoAmigo(userId, userVariavel, true);
             atualizarTituloAmigo(userId);
         });
@@ -1289,12 +1328,14 @@
 
         socket.on('user-disconnected', (userId) => {
             if (peers[userId]) {
+                const nomeQueSaiu = remoteVariables[userId] || 'Um macaquinho';
                 peers[userId].close();
                 delete peers[userId];
                 pararDetectorFalaRemota(userId);
                 document.getElementById(`caixa-${userId}`)?.remove();
                 document.getElementById(`audio-${userId}`)?.remove();
                 tocarSomSintetizado('sair');
+                adicionarMensagemNaTela('Sistema', `🍃 ${nomeQueSaiu} desceu da árvore.`, false);
                 verificarListaVazia();
             }
         });
@@ -1425,6 +1466,7 @@
                 atualizarAnimacaoLocalFala(false);
                 avaliarQualidadeMicrofone(performance.now(), false);
                 criarOuAtualizarCardLocal();
+                if (salaAtual) socket.emit('update-mute', isMuted);
             }
         }
 

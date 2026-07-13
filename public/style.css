@@ -742,6 +742,28 @@ select:focus-visible {
     color: #5D4037;
 }
 
+/* Botão de mostrar/ocultar a sidebar, só aparece no celular (ver media query 700px) */
+.btn-toggle-sidebar {
+    display: none;
+    align-items: center;
+    gap: 4px;
+    background-color: var(--t-box);
+    color: var(--t-text-box);
+    border: 3px solid var(--t-border);
+    border-radius: 999px;
+    box-shadow: 0 4px 0 var(--t-border);
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: bold;
+    white-space: nowrap;
+    transition: all 0.5s ease;
+}
+
+.btn-toggle-sidebar:active {
+    transform: translateY(2px);
+    box-shadow: 0 2px 0 var(--t-border);
+}
+
 .toast-feedback {
     position: fixed;
     left: 50%;
@@ -986,6 +1008,15 @@ input[type="range"] {
     animation: falandoPulso 0.8s ease-in-out infinite;
 }
 
+.amigo-box.usuario-mutado {
+    opacity: 0.75;
+    filter: grayscale(35%);
+}
+
+.amigo-box.usuario-mutado label {
+    font-style: italic;
+}
+
 @keyframes falandoPulso {
 
     0%,
@@ -1084,6 +1115,7 @@ input[type="range"] {
         border-bottom: 3px solid var(--t-border);
         padding: 10px 12px;
         flex-shrink: 1;
+        transition: max-height 0.3s ease, padding 0.3s ease, border-color 0.5s ease;
     }
 
     .sidebar h2 {
@@ -1099,6 +1131,19 @@ input[type="range"] {
     #overlay-bloqueio {
         border-radius: 0;
         font-size: 20px;
+    }
+
+    .btn-toggle-sidebar {
+        display: inline-flex;
+    }
+
+    /* Quando ocultada, a sidebar encolhe a zero e some, sobrando só o chat */
+    body.sidebar-oculta .sidebar {
+        max-height: 0;
+        padding-top: 0;
+        padding-bottom: 0;
+        border-bottom-width: 0;
+        overflow: hidden;
     }
 }
 
