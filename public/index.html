@@ -865,51 +865,62 @@
             const loop = () => {
                 if (!processingNodes || processingNodes.analyser !== analyser) return;
 
-                analyser.getFloatTimeDomainData(data);
-                let sum = 0;
-                for (let i = 0; i < data.length; i++) sum += data[i] * data[i];
+                try {
+                    analyser.getFloatTimeDomainData(data);
+                    let sum = 0;
+                    for (let i = 0; i < data.length; i++) sum += data[i] * data[i];
 
-                const rms = Math.sqrt(sum / data.length);
-                smoothedRms = smoothedRms * 0.86 + rms * 0.14;
-                const agora = performance.now();
+                    const rms = Math.sqrt(sum / data.length);
+                    smoothedRms = smoothedRms * 0.86 + rms * 0.14;
+                    const agora = performance.now();
 
-                // Deixando o gatilho do macaquinho um pouco mais sensível para sincronizar perfeitamente com a barra visual
-                const speechThreshold = dynamicSpeakThreshold * 0.8;
-                
-                if (smoothedRms > speechThreshold) speakingUntil = agora + speakHoldMs;
-                const estaFalando = agora < speakingUntil;
+                    // Deixando o gatilho do macaquinho um pouco mais sensível para sincronizar perfeitamente com a barra visual
+                    const speechThreshold = dynamicSpeakThreshold * 0.8;
 
-                // Referência FIXA calibrada (igual ao detector dos amiguinhos remotos) em vez de um "pico
-                // recente" que ficava fugindo pra cima a cada som mais alto - isso fazia a voz normal
-                // parecer cada vez mais fraca com o tempo e o macaco "parar de pular" na prática.
-                // Com voz normal o pulo já fica quase no talo; gritar só bate no teto (não passa disso).
-                const nivelNormalizado = Math.min(1, smoothedRms / (dynamicSpeakThreshold * 3.2));
-                const intensidadePulo = 0.5 + nivelNormalizado * 1.8;
+                    if (smoothedRms > speechThreshold) speakingUntil = agora + speakHoldMs;
+                    const estaFalando = agora < speakingUntil;
 
-                let gateTarget = 1;
-                if (processingNodes?.gate?.gain) {
-                    if (isMuted) {
-                        gateTarget = 0;
-                    } else if (smoothedRms > speechThreshold) {
-                        gateTarget = 1;
-                    } else if (isNoiseSuppressed) {
-                        gateTarget = smoothedRms > noiseFloorRms * 1.8
-                            ? Math.min(0.3, forcaCorteRuido * 3)
-                            : forcaCorteRuido;
-                    } else {
-                        gateTarget = 1;
+                    // Referência FIXA calibrada (igual ao detector dos amiguinhos remotos) em vez de um "pico
+                    // recente" que ficava fugindo pra cima a cada som mais alto - isso fazia a voz normal
+                    // parecer cada vez mais fraca com o tempo e o macaco "parar de pular" na prática.
+                    // Com voz normal o pulo já fica quase no talo; gritar só bate no teto (não passa disso).
+                    const nivelNormalizado = Math.min(1, smoothedRms / (dynamicSpeakThreshold * 3.2));
+                    const intensidadePulo = 0.5 + nivelNormalizado * 1.8;
+
+                    let gateTarget = 1;
+                    if (processingNodes?.gate?.gain) {
+                        if (isMuted) {
+                            gateTarget = 0;
+                        } else if (smoothedRms > speechThreshold) {
+                            gateTarget = 1;
+                        } else if (isNoiseSuppressed) {
+                            gateTarget = smoothedRms > noiseFloorRms * 1.8
+                                ? Math.min(0.3, forcaCorteRuido * 3)
+                                : forcaCorteRuido;
+                        } else {
+                            gateTarget = 1;
+                        }
+                        processingNodes.gate.gain.setTargetAtTime(gateTarget, ctx.currentTime, 0.03);
                     }
-                    processingNodes.gate.gain.setTargetAtTime(gateTarget, ctx.currentTime, 0.03);
-                }
-                currentGateGain = gateTarget;
+                    currentGateGain = gateTarget;
 
-                atualizarAnimacaoLocalFala(estaFalando, intensidadePulo);
-                avaliarQualidadeMicrofone(agora, estaFalando);
-                atualizarMedidorRuido(nivelNormalizado, gateTarget, estaFalando);
-                const nivelMiniLocal = document.getElementById('nivel-mini-local');
-                if (nivelMiniLocal) {
-                    nivelMiniLocal.style.width = `${Math.round(Math.max(4, nivelNormalizado * 100))}%`;
+                    atualizarAnimacaoLocalFala(estaFalando, intensidadePulo);
+                    avaliarQualidadeMicrofone(agora, estaFalando);
+                    atualizarMedidorRuido(nivelNormalizado, gateTarget, estaFalando);
+                    const nivelMiniLocal = document.getElementById('nivel-mini-local');
+                    if (nivelMiniLocal) {
+                        nivelMiniLocal.style.width = `${Math.round(Math.max(4, nivelNormalizado * 100))}%`;
+                    }
+
+                    if (window.__macacoDebug) {
+                        console.log(`🐵 rms=${smoothedRms.toFixed(4)} limiarFala=${speechThreshold.toFixed(4)} falando=${estaFalando} intensidade=${intensidadePulo.toFixed(2)}`);
+                    }
+                } catch (err) {
+                    // Isso aqui é justamente pra NUNCA deixar o macaco travar em silêncio de novo:
+                    // se algo der erro, avisa no console mas continua tentando no próximo frame.
+                    console.error('🐵 Erro no detector de fala (pode ser a causa do macaco não pular):', err);
                 }
+
                 micAnimationFrame = requestAnimationFrame(loop);
             };
 
