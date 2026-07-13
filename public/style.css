@@ -413,6 +413,20 @@ select:focus-visible {
         animation-iteration-count: 1 !important;
         transition-duration: 0.001s !important;
     }
+
+    /* Exceção proposital: o pulo do macaco (e o pulso do card de quem tá falando) não é
+       decoração - é a ÚNICA forma visual de saber quem está falando na sala. Zerar isso
+       deixava tudo "certo" no JS mas o macaco parecia travado pra quem usa esse ajuste
+       de acessibilidade do sistema. É um movimento pequeno (poucos pixels), então mantemos. */
+    .macaco-no-galho.falando {
+        animation-duration: 0.3s !important;
+        animation-iteration-count: infinite !important;
+    }
+
+    .amigo-box.falando-remoto {
+        animation-duration: 0.8s !important;
+        animation-iteration-count: infinite !important;
+    }
 }
 
 .btn-ativo {

@@ -9,6 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐵</text></svg>">
 </head>
 
 <body class="fundo-banana">
@@ -54,14 +55,14 @@
                 <div class="painel-audio-divisor"></div>
                 <div class="painel-audio-secao-titulo">🧠 Avançado</div>
 
-                <label class="painel-audio-label painel-audio-toggle-label" for="toggle-isolamento-voz">
-                    <span>🧠 Isolamento de Voz</span>
+                <div class="painel-audio-label painel-audio-toggle-label">
+                    <label for="toggle-isolamento-voz">🧠 Isolamento de Voz</label>
                     <label class="mini-switch">
                         <input type="checkbox" id="toggle-isolamento-voz"
                             onchange="alternarIsolamentoVoz(this.checked)">
                         <span class="mini-switch-trilho"></span>
                     </label>
-                </label>
+                </div>
                 <p class="painel-audio-dica">Supressão de ruído do próprio navegador. Deixa a voz mais "limpa", mas
                     em alguns mics pode fazer o macaquinho pular menos. Se acontecer, é só desligar de novo.</p>
 
