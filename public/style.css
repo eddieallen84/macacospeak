@@ -138,7 +138,7 @@ h2 {
     transition: color 0.5s ease;
 }
 
-.apelido-container,
+.variavel-container,
 .amigo-box {
     background-color: var(--t-box);
     padding: 12px;
@@ -150,7 +150,7 @@ h2 {
     transition: all 0.5s ease;
 }
 
-.apelido-container label,
+.variavel-container label,
 .amigo-box {
     font-size: 13px;
     font-weight: bold;
@@ -190,7 +190,7 @@ input::placeholder {
     opacity: 0.6;
 }
 
-#btn-ok-apelido {
+#btn-ok-variavel {
     flex-shrink: 0;
     width: auto;
     padding: 0 12px;
@@ -210,11 +210,11 @@ input::placeholder {
     transition: 0.1s;
 }
 
-#btn-ok-apelido:hover:not(:disabled) {
+#btn-ok-variavel:hover:not(:disabled) {
     background-color: #B8E994;
 }
 
-#btn-ok-apelido:active:not(:disabled) {
+#btn-ok-variavel:active:not(:disabled) {
     transform: translateY(3px);
     box-shadow: none;
 }

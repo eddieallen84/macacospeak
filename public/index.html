@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,17 +10,17 @@
     <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/style.css">
 </head>
-<!-- Chuva de Banana definida como o padrao inicial de novo -->
-<body class="fundo-banana"> 
+
+<body class="fundo-banana">
 
     <div class="sidebar">
         <h2>🐵 MacacoSpeak</h2>
-        
-        <div class="apelido-container">
+
+        <div class="variavel-container">
             <label>Suba seu Nome:</label>
             <div class="input-group">
-                <input type="text" id="txt-apelido" placeholder="Macaquinho..." autocomplete="off">
-                <button id="btn-ok-apelido" onclick="salvarApelido()" title="Salvar nome">✔️</button>
+                <input type="text" id="txt-variavel" placeholder="Macaquinho..." autocomplete="off">
+                <button id="btn-ok-variavel" onclick="salvarVariavel()" title="Salvar nome">✔️</button>
             </div>
         </div>
 
@@ -27,24 +28,33 @@
             <button id="btn-arvore1" onclick="entrarNaSala('arvore-1')">🌴 Subir na Árvore 1!</button>
             <button id="btn-arvore2" onclick="entrarNaSala('arvore-2')">🌴 Subir na Árvore 2!</button>
         </div>
-        
+
         <div id="controles-sala" style="display: none;">
             <button id="btn-mutar" class="btn-mute" onclick="mutarMicrofone()">🐵 Mic Aberto!</button>
-            <button id="btn-ruido" class="btn-ruido" onclick="alternarRuido()" title="Ative quando o mic estiver com ganho alto e pegando muito som de fundo"><span class="luz-status" id="luz-ruido"></span><span id="texto-btn-ruido">🎧 Filtro Mágico: DESLIGADO</span></button>
+            <button id="btn-ruido" class="btn-ruido" onclick="alternarRuido()"
+                title="Ative quando o mic estiver com ganho alto e pegando muito som de fundo"><span class="luz-status"
+                    id="luz-ruido"></span><span id="texto-btn-ruido">🎧 Filtro Mágico: DESLIGADO</span></button>
             <div class="medidor-ruido-wrap">
                 <div class="medidor-ruido-legenda"><span>🎤 Seu microfone agora</span></div>
-                <div class="medidor-ruido"><div id="medidor-ruido-fill" class="medidor-ruido-fill"></div></div>
+                <div class="medidor-ruido">
+                    <div id="medidor-ruido-fill" class="medidor-ruido-fill"></div>
+                </div>
                 <div class="medidor-ruido-status" id="medidor-ruido-status" style="visibility: hidden;"></div>
             </div>
 
-            <button id="btn-config-audio" class="btn-config-audio" onclick="alternarPainelAudio()">⚙️ Configurações de Áudio</button>
+            <button id="btn-config-audio" class="btn-config-audio" onclick="alternarPainelAudio()">⚙️ Configurações de
+                Áudio</button>
             <div id="painel-audio" class="painel-audio" style="display: none;">
-                <label class="painel-audio-label" for="slider-ganho">🎚️ Ganho de entrada: <span id="valor-ganho">1.0x</span></label>
-                <input type="range" id="slider-ganho" min="1" max="3" step="0.1" value="1" oninput="ajustarGanhoEntrada(this.value)">
+                <label class="painel-audio-label" for="slider-ganho">🎚️ Ganho de entrada: <span
+                        id="valor-ganho">1.0x</span></label>
+                <input type="range" id="slider-ganho" min="1" max="3" step="0.1" value="1"
+                    oninput="ajustarGanhoEntrada(this.value)">
                 <p class="painel-audio-dica">Aumente se o medidor ficar sempre baixo mesmo falando perto do mic.</p>
 
-                <label class="painel-audio-label" for="slider-forca-gate">🔇 Força do corte de ruído (Filtro Mágico)</label>
-                <input type="range" id="slider-forca-gate" min="1" max="3" step="1" value="2" oninput="ajustarForcaGate(this.value)">
+                <label class="painel-audio-label" for="slider-forca-gate">🔇 Força do corte de ruído (Filtro
+                    Mágico)</label>
+                <input type="range" id="slider-forca-gate" min="1" max="3" step="1" value="2"
+                    oninput="ajustarForcaGate(this.value)">
                 <div class="painel-audio-legenda-slider"><span>Suave</span><span>Médio</span><span>Forte</span></div>
                 <p class="painel-audio-dica">Só afeta os intervalos SEM fala. Sua voz nunca é abafada.</p>
 
@@ -60,7 +70,7 @@
             </div>
         </div>
     </div>
-    
+
     <div class="chat-area">
         <div class="chat-topbar">
             <div class="chat-topbar-esquerda">
@@ -80,7 +90,7 @@
             </div>
         </div>
         <div id="overlay-bloqueio">
-            hola macaquito, escolha seu nome<br>e sua arvore, macaquito. 🍌
+            hola macaquito, escolha seu nome e aperte ok 🍌
         </div>
         <div id="chat-messages"></div>
         <div class="chat-input-area">
@@ -102,36 +112,34 @@
         let isMuted = false;
         let isNoiseSuppressed = false;
         let salaAtual = null;
-        let apelidoLocal = "";
+        let variavelLocal = "";
         let micAnimationFrame = null;
         let speakingUntil = 0;
         let noiseFloorRms = 0.01;
         let smoothedRms = 0;
         let dynamicSpeakThreshold = 0.028;
-        let ultimaAtualizacaoStatusMic = 0;
+        let ultimaAtualizacaoMic = 0;
         let localProcessedStream = null;
         let processingAudioContext = null;
         let processingNodes = null;
         let currentAudioTrack = null;
         let currentGateGain = 1;
         let nivelPicoRecente = 0.04;
-        let dispositivoMicSelecionado = null; // null = mic padrão do navegador
+        let dispositivoMicSelecionado = null;
         let ganhoEntradaAtual = 1;
-        // Força do corte de ruído com o Filtro Mágico ligado (quanto MENOR, mais silêncio entre as falas).
-        // Só afeta os intervalos SEM voz - a voz em si nunca é abafada, ligado ou desligado.
         let forcaCorteRuido = 0.05;
-        const SPEAK_THRESHOLD = 0.028;
-        const SPEAK_HOLD_MS = 220;
+        const speakThreshold = 0.028;
+        const speakHoldMs = 220;
         let roomCounts = { 'arvore-1': 0, 'arvore-2': 0 };
-        const NICKNAME_STORAGE_KEY = 'macacospeak.apelido';
-        const THEME_STORAGE_KEY = 'macacospeak.tema';
-        const LAST_ROOM_STORAGE_KEY = 'macacospeak.lastRoom';
+        const variavelStorageKey = 'macacospeak.variavel';
+        const themeStorageKey = 'macacospeak.tema';
+        const lastRoomStorageKey = 'macacospeak.lastRoom';
         let toastTimer = null;
         let remoteAudioContext = null;
         const remoteSpeakingState = {};
         const remoteAnalysers = {};
         const remoteRafIds = {};
-        const remoteNicknames = {};
+        const remoteVariables = {};
 
         function mostrarToast(texto) {
             const toast = document.getElementById('toast-feedback');
@@ -145,9 +153,9 @@
             }, 2200);
         }
 
-        function atualizarEstadoApelido(bloqueado) {
-            const input = document.getElementById('txt-apelido');
-            const btnOk = document.getElementById('btn-ok-apelido');
+        function atualizarEstadoVariavel(bloqueado) {
+            const input = document.getElementById('txt-variavel');
+            const btnOk = document.getElementById('btn-ok-variavel');
             if (!input || !btnOk) return;
 
             input.disabled = bloqueado;
@@ -170,10 +178,27 @@
 
         function atualizarTituloAmigo(userId) {
             const label = document.getElementById(`label-${userId}`);
+            const caixa = document.getElementById(`caixa-${userId}`);
             if (!label) return;
-            const nick = remoteNicknames[userId] || 'Amiguinho';
+            
+            const nick = remoteVariables[userId] || 'Amiguinho';
             const falando = !!remoteSpeakingState[userId];
-            label.textContent = falando ? `🔊 Vol. ${nick}:` : `🐵 Vol. ${nick}:`;
+            
+            // Texto sem o "Vol."
+            label.textContent = falando ? `🔊 ${nick}:` : `🐵 ${nick}:`;
+
+            // Aplica cor dinâmica baseada no nome
+            if (caixa) {
+                let hash = 0;
+                for (let i = 0; i < nick.length; i++) {
+                    hash = (hash * 31 + nick.charCodeAt(i)) & 0xffffffff;
+                }
+                const matiz = Math.abs(hash) % 360;
+                
+                caixa.style.backgroundColor = `hsl(${matiz}, 65%, 85%)`;
+                caixa.style.borderColor = `hsl(${matiz}, 50%, 50%)`;
+                label.style.color = `hsl(${matiz}, 80%, 25%)`;
+            }
         }
 
         function setFalandoRemoto(userId, falando, intensidade) {
@@ -206,7 +231,7 @@
             let source;
             try {
                 source = remoteAudioContext.createMediaStreamSource(stream);
-            } catch (_) {
+            } catch (err) {
                 return;
             }
 
@@ -253,15 +278,15 @@
 
             const state = remoteAnalysers[userId];
             if (state?.source) {
-                try { state.source.disconnect(); } catch (_) {}
+                try { state.source.disconnect(); } catch (err) { }
             }
             if (state?.analyser) {
-                try { state.analyser.disconnect(); } catch (_) {}
+                try { state.analyser.disconnect(); } catch (err) { }
             }
 
             delete remoteAnalysers[userId];
             delete remoteSpeakingState[userId];
-            delete remoteNicknames[userId];
+            delete remoteVariables[userId];
         }
 
         function getTextoStatusSala(totalNaSala) {
@@ -271,21 +296,21 @@
             return 'Macacada reunida! 🎉🍌';
         }
 
-        function carregarApelidoSalvo() {
-            const input = document.getElementById('txt-apelido');
+        function carregarVariavelSalva() {
+            const input = document.getElementById('txt-variavel');
             if (!input) return;
 
             try {
-                const salvo = localStorage.getItem(NICKNAME_STORAGE_KEY);
+                const salvo = localStorage.getItem(variavelStorageKey);
                 if (salvo && salvo.trim()) {
-                    apelidoLocal = salvo.trim();
-                    input.value = apelidoLocal;
-                    atualizarEstadoApelido(true);
+                    variavelLocal = salvo.trim();
+                    input.value = variavelLocal;
+                    atualizarEstadoVariavel(true);
                     return;
                 }
-            } catch (_) {}
+            } catch (err) { }
 
-            atualizarEstadoApelido(false);
+            atualizarEstadoVariavel(false);
         }
 
         function atualizarBotoesSalas() {
@@ -315,12 +340,12 @@
             const select = document.getElementById('select-fundo');
             if (!select) return;
             try {
-                const tema = localStorage.getItem(THEME_STORAGE_KEY);
+                const tema = localStorage.getItem(themeStorageKey);
                 if (tema) {
                     select.value = tema;
                     alterarFundo(tema);
                 }
-            } catch (_) {}
+            } catch (err) { }
         }
 
         socket.on('ice-config', (iceServers) => {
@@ -343,9 +368,6 @@
             atualizarStatusConexao('Conectado', 'online');
 
             if (socketJaConectouAntes && salaAtual) {
-                // Reconexão de verdade (não a primeira vez): o servidor já te tirou da sala quando
-                // a conexão caiu, então por fora tudo parece normal ("Conectado" verde) mas você não
-                // está mais em nenhuma sala - chat e voz ficariam mudos sem ninguém perceber o porquê.
                 const salaParaVoltar = salaAtual;
                 salaAtual = null;
                 mostrarToast('🔌 A conexão caiu e voltou! Te colocando de volta na árvore...');
@@ -363,17 +385,13 @@
             atualizarStatusConexao('Reconectando...', 'connecting');
         });
 
-        carregarApelidoSalvo();
+        carregarVariavelSalva();
         carregarTemaSalvo();
         atualizarVisualBotaoRuido();
         ajustarEspacamentoChatPorTopbar();
         window.addEventListener('resize', ajustarEspacamentoChatPorTopbar);
 
         function getAudioConstraints() {
-            // Nem "ligado" nem "desligado" pedem noiseSuppression/autoGainControl nativos do navegador.
-            // Esses recursos processam o áudio inteiro (voz junto) e é por isso que a voz ficava mais
-            // baixa com o Filtro Mágico ligado. Agora quem decide o que é ruído de fundo é só o nosso
-            // próprio "gate" (corta entre as falas), que NUNCA abafa a voz enquanto você está falando.
             const constraints = {
                 echoCancellation: { ideal: true },
                 noiseSuppression: { ideal: false },
@@ -414,19 +432,13 @@
             const ctx = new AudioContextClass({ sampleRate: 48000 });
             const source = ctx.createMediaStreamSource(stream);
 
-            // Ganho de entrada manual (configurável em "Configurações de Áudio"), útil pra mic fraco.
             const inputGain = ctx.createGain();
             inputGain.gain.value = ganhoEntradaAtual;
 
-            // Analyser embutido no mesmo contexto do pipeline (mede o áudio já com o ganho aplicado,
-            // então o medidor/pulo do macaco refletem exatamente o que o Filtro Mágico está processando).
             const analyser = ctx.createAnalyser();
             analyser.fftSize = 1024;
             analyser.smoothingTimeConstant = 0.6;
 
-            // EQ e compressão agora são sempre os mesmos, ligado ou desligado o Filtro Mágico -
-            // só um leve polimento de voz, nunca abafando ela. A diferença entre os modos fica
-            // 100% por conta do "gate" lá embaixo, que só age nos intervalos SEM fala.
             const highpass = ctx.createBiquadFilter();
             highpass.type = 'highpass';
             highpass.frequency.value = 90;
@@ -443,7 +455,6 @@
             mudCut.Q.value = 1.05;
             mudCut.gain.value = -1.5;
 
-            // Realce de presença para deixar a voz mais nítida (não é volume, é clareza).
             const presenceBoost = ctx.createBiquadFilter();
             presenceBoost.type = 'peaking';
             presenceBoost.frequency.value = 2800;
@@ -469,15 +480,14 @@
             limiter.attack.value = 0.001;
             limiter.release.value = 0.06;
 
-            // O gate é o que de fato remove o ruído de fundo, e só quando você NÃO está falando.
             const gate = ctx.createGain();
             gate.gain.value = 1;
 
             const outputDestination = ctx.createMediaStreamDestination();
 
             source.connect(inputGain);
-            inputGain.connect(analyser); // tap só de leitura, pro medidor/detector de fala
-            inputGain.connect(highpass); // segue pro processamento de verdade / envio
+            inputGain.connect(analyser);
+            inputGain.connect(highpass);
             highpass.connect(lowShelf);
             lowShelf.connect(mudCut);
             mudCut.connect(presenceBoost);
@@ -499,43 +509,43 @@
 
         function pararProcessamentoAudio() {
             if (processingNodes?.source) {
-                try { processingNodes.source.disconnect(); } catch (_) {}
+                try { processingNodes.source.disconnect(); } catch (err) { }
             }
             if (processingNodes?.inputGain) {
-                try { processingNodes.inputGain.disconnect(); } catch (_) {}
+                try { processingNodes.inputGain.disconnect(); } catch (err) { }
             }
             if (processingNodes?.analyser) {
-                try { processingNodes.analyser.disconnect(); } catch (_) {}
+                try { processingNodes.analyser.disconnect(); } catch (err) { }
             }
             if (processingNodes?.highpass) {
-                try { processingNodes.highpass.disconnect(); } catch (_) {}
+                try { processingNodes.highpass.disconnect(); } catch (err) { }
             }
             if (processingNodes?.lowShelf) {
-                try { processingNodes.lowShelf.disconnect(); } catch (_) {}
+                try { processingNodes.lowShelf.disconnect(); } catch (err) { }
             }
             if (processingNodes?.mudCut) {
-                try { processingNodes.mudCut.disconnect(); } catch (_) {}
+                try { processingNodes.mudCut.disconnect(); } catch (err) { }
             }
             if (processingNodes?.presenceBoost) {
-                try { processingNodes.presenceBoost.disconnect(); } catch (_) {}
+                try { processingNodes.presenceBoost.disconnect(); } catch (err) { }
             }
             if (processingNodes?.lowpass) {
-                try { processingNodes.lowpass.disconnect(); } catch (_) {}
+                try { processingNodes.lowpass.disconnect(); } catch (err) { }
             }
             if (processingNodes?.compressor) {
-                try { processingNodes.compressor.disconnect(); } catch (_) {}
+                try { processingNodes.compressor.disconnect(); } catch (err) { }
             }
             if (processingNodes?.limiter) {
-                try { processingNodes.limiter.disconnect(); } catch (_) {}
+                try { processingNodes.limiter.disconnect(); } catch (err) { }
             }
             if (processingNodes?.gate) {
-                try { processingNodes.gate.disconnect(); } catch (_) {}
+                try { processingNodes.gate.disconnect(); } catch (err) { }
             }
 
             processingNodes = null;
 
             if (processingAudioContext && processingAudioContext.state !== 'closed') {
-                processingAudioContext.close().catch(() => {});
+                processingAudioContext.close().catch(() => { });
             }
 
             processingAudioContext = null;
@@ -584,8 +594,6 @@
             fill.style.width = `${Math.round(nivelExibido * 100)}%`;
             fill.classList.toggle('voz-passando', gateTarget > 0.5);
 
-            // Só avisa pra ligar o Filtro Mágico se tiver bastante ruído de fundo persistente
-            // (não é só um pico passageiro) e o filtro ainda estiver desligado.
             const agora = performance.now();
             const ruidoRelativo = noiseFloorRms > 0 ? smoothedRms / noiseFloorRms : 1;
             const pareceRuidoDeFundo = !isMuted && !isNoiseSuppressed && !estaFalando && ruidoRelativo > 1.9 && smoothedRms > 0.02;
@@ -645,10 +653,6 @@
                 const devices = await navigator.mediaDevices.enumerateDevices();
                 const todasEntradas = devices.filter((d) => d.kind === 'audioinput');
 
-                // No Windows/Chrome o mesmo microfone físico costuma aparecer repetido: como "Padrão",
-                // "Comunicações" e o dispositivo puro - cada um com deviceId/groupId DIFERENTES, mesmo
-                // sendo o mesmo hardware. A parte confiável é o ID entre parênteses tipo "(040b:0897)"
-                // que o Chrome imprime no fim do nome - isso sim identifica a placa/mic de verdade.
                 const vistos = new Map();
                 todasEntradas.forEach((d) => {
                     if (d.deviceId === 'default' || d.deviceId === 'communications') return;
@@ -659,8 +663,6 @@
                     const ehGenerico = /^(Padrão|Comunicações)\s*-/i.test(label);
 
                     const existente = vistos.get(chave);
-                    // Se ainda não vimos esse hardware, ou se o que já temos é o rótulo genérico
-                    // ("Padrão -"/"Comunicações -") e esse aqui é o nome "limpo", troca pelo limpo.
                     if (!existente || (existente.generico && !ehGenerico)) {
                         vistos.set(chave, { device: d, generico: ehGenerico });
                     }
@@ -673,13 +675,12 @@
                 entradas.forEach((d, i) => {
                     const opt = document.createElement('option');
                     opt.value = d.deviceId;
-                    // Tira prefixos tipo "Padrão - " / "Comunicações - " que alguns navegadores deixam no nome.
                     opt.textContent = (d.label || `Microfone ${i + 1}`).replace(/^(Padrão|Comunicações)\s*-\s*/i, '');
                     select.appendChild(opt);
                 });
 
                 select.value = valorAtual || dispositivoMicSelecionado || '';
-            } catch (_) {}
+            } catch (err) { }
         }
 
         async function trocarMicrofone(deviceId) {
@@ -702,8 +703,8 @@
         }
 
         function avaliarQualidadeMicrofone(agora, estaFalando) {
-            if (agora - ultimaAtualizacaoStatusMic < 300) return;
-            ultimaAtualizacaoStatusMic = agora;
+            if (agora - ultimaAtualizacaoMic < 300) return;
+            ultimaAtualizacaoMic = agora;
 
             const botaoRuido = document.getElementById('btn-ruido');
             if (!botaoRuido) return;
@@ -748,7 +749,7 @@
                 await new Promise((resolve) => setTimeout(resolve, 30));
             }
 
-            const ruidoMedio = amostras > 0 ? somaRms / amostras : SPEAK_THRESHOLD;
+            const ruidoMedio = amostras > 0 ? somaRms / amostras : speakThreshold;
             noiseFloorRms = ruidoMedio;
             dynamicSpeakThreshold = Math.max(0.015, Math.min(0.08, ruidoMedio * 2.6));
             smoothedRms = noiseFloorRms;
@@ -769,8 +770,6 @@
             await calibrarLimiarDeFala(analyser, data);
 
             const loop = () => {
-                // Se o pipeline foi reconstruído (trocou de mic, etc.) esse analyser antigo já era -
-                // um novo iniciarDetectorDeFala() vai assumir, então esse loop simplesmente para aqui.
                 if (!processingNodes || processingNodes.analyser !== analyser) return;
 
                 analyser.getFloatTimeDomainData(data);
@@ -782,11 +781,9 @@
                 const agora = performance.now();
 
                 const speechThreshold = dynamicSpeakThreshold;
-                if (smoothedRms > speechThreshold) speakingUntil = agora + SPEAK_HOLD_MS;
+                if (smoothedRms > speechThreshold) speakingUntil = agora + speakHoldMs;
                 const estaFalando = agora < speakingUntil;
 
-                // Nível normalizado por um "pico recente" que se auto-ajusta ao seu volume de grito -
-                // funciona igual nos dois modos do filtro, já que agora eles processam a voz do mesmo jeito.
                 nivelPicoRecente = Math.max(smoothedRms, nivelPicoRecente * 0.992);
                 const nivelReferencia = Math.max(0.015, nivelPicoRecente);
                 const nivelNormalizado = Math.min(1, smoothedRms / nivelReferencia);
@@ -797,16 +794,12 @@
                     if (isMuted) {
                         gateTarget = 0;
                     } else if (smoothedRms > speechThreshold * 0.85) {
-                        // Falando: a voz NUNCA é abafada, ligado ou desligado o Filtro Mágico.
                         gateTarget = 1;
                     } else if (isNoiseSuppressed) {
-                        // Não tá falando + filtro ligado: corta o ruído de fundo (ex: ventilador).
-                        // "forcaCorteRuido" é ajustável nas Configurações de Áudio.
                         gateTarget = smoothedRms > noiseFloorRms * 1.8
                             ? Math.min(0.3, forcaCorteRuido * 3)
                             : forcaCorteRuido;
                     } else {
-                        // Filtro desligado: deixa passar quase tudo (comportamento cru).
                         gateTarget = 0.85;
                     }
 
@@ -826,16 +819,16 @@
         function alterarFundo(tipo) {
             document.body.className = 'fundo-' + tipo;
             try {
-                localStorage.setItem(THEME_STORAGE_KEY, tipo);
-            } catch (_) {}
+                localStorage.setItem(themeStorageKey, tipo);
+            } catch (err) { }
         }
 
-        function salvarApelido() {
-            const input = document.getElementById('txt-apelido');
+        function salvarVariavel() {
+            const input = document.getElementById('txt-variavel');
             if (!input) return;
 
             if (input.disabled) {
-                atualizarEstadoApelido(false);
+                atualizarEstadoVariavel(false);
                 input.focus();
                 input.select();
                 return;
@@ -846,23 +839,28 @@
                 return;
             }
 
-            const apelidoAnterior = apelidoLocal;
-            const novoApelido = input.value.trim();
+            const variavelAnterior = variavelLocal;
+            const novoVariavel = input.value.trim();
 
             const aplicarNomeLocalmente = () => {
-                apelidoLocal = novoApelido;
-                input.value = apelidoLocal;
+                variavelLocal = novoVariavel;
+                input.value = variavelLocal;
 
                 try {
-                    localStorage.setItem(NICKNAME_STORAGE_KEY, apelidoLocal);
-                } catch (_) {}
+                    localStorage.setItem(variavelStorageKey, variavelLocal);
+                } catch (err) { }
 
-                atualizarEstadoApelido(true);
-                mostrarToast(`Nome salvo: ${apelidoLocal}`);
+                atualizarEstadoVariavel(true);
+                mostrarToast(`Nome salvo: ${variavelLocal}`);
+
+                const overlay = document.getElementById('overlay-bloqueio');
+                if (overlay && !salaAtual) {
+                    overlay.innerHTML = `muito bem "${variavelLocal}", agora escoha sua arvore e seja um macaco feliz 🍌`;
+                }
             };
 
-            if (salaAtual && apelidoAnterior && apelidoAnterior !== novoApelido) {
-                socket.emit('update-nickname', novoApelido, (resposta) => {
+            if (salaAtual && variavelAnterior && variavelAnterior !== novoVariavel) {
+                socket.emit('update-nickname', novoVariavel, (resposta) => {
                     if (!resposta || !resposta.ok) {
                         alert('Esse nome já está sendo usado por outro macaco nessa árvore! Escolha outro.');
                         return;
@@ -877,7 +875,7 @@
                         const label = document.createElement('label');
                         label.style.display = 'block';
                         label.style.marginBottom = '4px';
-                        label.textContent = `🐵 Vol. ${apelidoLocal}:`;
+                        label.textContent = `🐵 ${variavelLocal}:`;
 
                         const slider = document.createElement('input');
                         slider.type = 'range';
@@ -885,7 +883,7 @@
                         slider.max = '1';
                         slider.step = '0.1';
                         slider.value = '1';
-                        slider.setAttribute('aria-label', `Volume de ${apelidoLocal}`);
+                        slider.setAttribute('aria-label', `Volume de ${variavelLocal}`);
                         slider.addEventListener('input', () => {
                             const audioEl = document.getElementById(`audio-${socket.id}`);
                             if (audioEl) audioEl.volume = slider.value;
@@ -893,8 +891,17 @@
 
                         caixaLocal.appendChild(label);
                         caixaLocal.appendChild(slider);
+                        
+                        let hash = 0;
+                        for (let i = 0; i < variavelLocal.length; i++) {
+                            hash = (hash * 31 + variavelLocal.charCodeAt(i)) & 0xffffffff;
+                        }
+                        const matiz = Math.abs(hash) % 360;
+                        caixaLocal.style.backgroundColor = `hsl(${matiz}, 65%, 85%)`;
+                        caixaLocal.style.borderColor = `hsl(${matiz}, 50%, 50%)`;
+                        label.style.color = `hsl(${matiz}, 80%, 25%)`;
                     }
-                    adicionarMensagemNaTela('Sistema', `Seu apelido mudou para ${apelidoLocal}.`, true);
+                    adicionarMensagemNaTela('Sistema', `Seu nome mudou para ${variavelLocal}.`, true);
                 });
             } else {
                 aplicarNomeLocalmente();
@@ -930,13 +937,13 @@
                     gainNode.gain.linearRampToValueAtTime(0, t + 0.05);
                     osc.start(t); osc.stop(t + 0.05);
                 }
-            } catch(e) {}
+            } catch (e) { }
         }
 
         async function entrarNaSala(nomeSala, opcoes) {
             const reconectando = !!opcoes?.reconectando;
 
-            if (!apelidoLocal) {
+            if (!variavelLocal) {
                 alert("Escreva seu nome e clique em OK primeiro!");
                 return;
             }
@@ -946,10 +953,10 @@
 
                 const salaAnterior = salaAtual;
 
-                socket.emit('join-room', nomeSala, apelidoLocal, (resposta) => {
+                socket.emit('join-room', nomeSala, variavelLocal, (resposta) => {
                     if (!resposta || !resposta.ok) {
                         if (resposta && resposta.reason === 'nick-em-uso') {
-                            alert('Esse nome já está sendo usado por outro macaco nessa árvore! Escolha outro apelido.');
+                            alert('Esse nome já está sendo usado por outro macaco nessa árvore! Escolha outro nome.');
                         } else {
                             alert('Não foi possível entrar nessa árvore. Tente de novo.');
                         }
@@ -961,7 +968,7 @@
                     }
 
                     salaAtual = nomeSala;
-                    try { localStorage.setItem(LAST_ROOM_STORAGE_KEY, nomeSala); } catch (_) {}
+                    try { localStorage.setItem(lastRoomStorageKey, nomeSala); } catch (err) { }
 
                     document.getElementById('lista-amigos').innerHTML = '';
                     document.getElementById('audios').innerHTML = '';
@@ -971,11 +978,11 @@
                         delete peers[id];
                         pararDetectorFalaRemota(id);
                     }
-                    
+
                     document.getElementById('btn-arvore1').classList.remove('btn-ativo');
                     document.getElementById('btn-arvore2').classList.remove('btn-ativo');
                     document.getElementById(nomeSala === 'arvore-1' ? 'btn-arvore1' : 'btn-arvore2').classList.add('btn-ativo');
-                    
+
                     document.getElementById('controles-sala').style.display = 'block';
                     document.getElementById('overlay-bloqueio').style.display = 'none';
 
@@ -994,22 +1001,28 @@
         }
 
         socket.on('user-nickname-updated', (userId, novoNome) => {
-            remoteNicknames[userId] = novoNome;
+            remoteVariables[userId] = novoNome;
             atualizarTituloAmigo(userId);
-            adicionarMensagemNaTela('Sistema', `${novoNome} mudou de apelido.`, false);
+            adicionarMensagemNaTela('Sistema', `${novoNome} mudou de nome.`, false);
         });
 
         socket.on('current-room-users', (usuarios) => {
-            for (const id in usuarios) configurarConexaoAmigo(id, usuarios[id], false);
+            for (const id in usuarios) {
+                remoteVariables[id] = usuarios[id];
+                configurarConexaoAmigo(id, usuarios[id], false);
+                atualizarTituloAmigo(id);
+            }
         });
 
-        socket.on('user-connected', async (userId, userNickname) => {
+        socket.on('user-connected', async (userId, userVariavel) => {
+            remoteVariables[userId] = userVariavel;
             tocarSomSintetizado('entrar');
-            configurarConexaoAmigo(userId, userNickname, true);
+            configurarConexaoAmigo(userId, userVariavel, true);
+            atualizarTituloAmigo(userId);
         });
 
-        async function configurarConexaoAmigo(userId, userNickname, criarOferta) {
-            const peer = criarPeer(userId, userNickname);
+        async function configurarConexaoAmigo(userId, userVariavel, criarOferta) {
+            const peer = criarPeer(userId, userVariavel);
             const jaTemAudioSaindo = peer.getSenders().some((s) => s.track && s.track.kind === 'audio');
 
             if (!jaTemAudioSaindo) {
@@ -1027,7 +1040,8 @@
         socket.on('signal', async (fromId, data) => {
             let peer = peers[fromId];
             if (data.offer) {
-                if (!peer) peer = criarPeer(fromId, "Amiguinho");
+                const actualName = remoteVariables[fromId] || "Amiguinho";
+                if (!peer) peer = criarPeer(fromId, actualName);
                 await peer.setRemoteDescription(new RTCSessionDescription(data.offer));
                 const answer = await peer.createAnswer();
                 await peer.setLocalDescription(answer);
@@ -1039,16 +1053,17 @@
             }
         });
 
-        function criarPeer(userId, userNickname) {
+        function criarPeer(userId, userVariavel) {
             if (peers[userId]) return peers[userId];
 
             const peer = new RTCPeerConnection({ iceServers: rtcIceServers });
             peer.onicecandidate = (e) => { if (e.candidate) socket.emit('signal', userId, { candidate: e.candidate }); };
-            
+
             peer.ontrack = (e) => {
                 if (document.getElementById(`caixa-${userId}`)) return;
-                remoteNicknames[userId] = userNickname;
-                
+                const actualName = remoteVariables[userId] || userVariavel || "Amiguinho";
+                remoteVariables[userId] = actualName;
+
                 const amigoBox = document.createElement('div');
                 amigoBox.className = 'amigo-box';
                 amigoBox.id = `caixa-${userId}`;
@@ -1057,7 +1072,7 @@
                 label.id = `label-${userId}`;
                 label.style.display = 'block';
                 label.style.marginBottom = '4px';
-                label.textContent = `🐵 Vol. ${userNickname}:`;
+                label.textContent = `🐵 ${actualName}:`;
 
                 const slider = document.createElement('input');
                 slider.type = 'range';
@@ -1065,7 +1080,7 @@
                 slider.max = '1';
                 slider.step = '0.1';
                 slider.value = '1';
-                slider.setAttribute('aria-label', `Volume de ${userNickname}`);
+                slider.setAttribute('aria-label', `Volume de ${actualName}`);
                 slider.addEventListener('input', () => {
                     const audioEl = document.getElementById(`audio-${userId}`);
                     if (audioEl) audioEl.volume = slider.value;
@@ -1073,17 +1088,18 @@
 
                 amigoBox.appendChild(label);
                 amigoBox.appendChild(slider);
-                
+
                 const audio = document.createElement('audio');
                 audio.id = `audio-${userId}`;
                 audio.srcObject = e.streams[0];
                 audio.autoplay = true;
-                
+
                 document.getElementById('lista-amigos').appendChild(amigoBox);
                 document.getElementById('audios').appendChild(audio);
                 iniciarDetectorFalaRemota(userId, e.streams[0]);
-                
+
                 verificarListaVazia();
+                atualizarTituloAmigo(userId); 
             };
 
             peers[userId] = peer;
@@ -1105,9 +1121,9 @@
         function verificarListaVazia() {
             const numAmigos = Object.keys(peers).length;
             const totalNaSala = numAmigos + 1;
-            
+
             const arvoreVisual = document.getElementById('visual-da-arvore');
-            
+
             arvoreVisual.innerHTML = "";
 
             const textoSala = getTextoStatusSala(totalNaSala);
@@ -1136,17 +1152,15 @@
             const input = document.getElementById('chat-input');
             const msg = input.value.trim();
             if (msg !== "" && salaAtual) {
-                adicionarMensagemNaTela(apelidoLocal, msg, true);
+                adicionarMensagemNaTela(variavelLocal, msg, true);
                 socket.emit('chat-message', salaAtual, msg);
                 input.value = "";
             }
         }
         function verificarEnter(event) { if (event.key === "Enter") enviarMensagem(); }
-        
+
         socket.on('chat-message', (id, nick, msg) => { adicionarMensagemNaTela(nick, msg, false); });
 
-        // Gera uma cor de identidade estável pro nome, sempre a mesma cor pro mesmo apelido.
-        // Cores saturadas/escuras o bastante pra ler bem em cima dos balões claros dos temas.
         function corDoNome(nome) {
             let hash = 0;
             for (let i = 0; i < nome.length; i++) {
@@ -1192,15 +1206,14 @@
             }
         }
 
-        // Se houver sala anterior salva e apelido carregado, tenta reconectar automaticamente.
         try {
-            const salaSalva = localStorage.getItem(LAST_ROOM_STORAGE_KEY);
-            if (salaSalva && apelidoLocal) {
+            const salaSalva = localStorage.getItem(lastRoomStorageKey);
+            if (salaSalva && variavelLocal) {
                 setTimeout(() => {
                     if (!salaAtual) entrarNaSala(salaSalva);
                 }, 250);
             }
-        } catch (_) {}
+        } catch (err) { }
 
         function alternarRuido() {
             if (localStream) {
@@ -1212,4 +1225,5 @@
         }
     </script>
 </body>
+
 </html>

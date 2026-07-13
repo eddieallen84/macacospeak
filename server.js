@@ -9,25 +9,25 @@ const io = new Server(server);
 app.use(express.static('public'));
 
 function getIceServersFromEnv() {
-    const stunUrls = (process.env.STUN_URLS || 'stun:stun.l.google.com:19302')
+    const stunUrlsLocal = (process.env.STUN_URLS || 'stun:stun.l.google.com:19302')
         .split(',')
         .map((url) => url.trim())
         .filter(Boolean);
 
-    const turnUrls = (process.env.TURN_URLS || '')
+    const turnUrlsLocal = (process.env.TURN_URLS || '')
         .split(',')
         .map((url) => url.trim())
         .filter(Boolean);
 
     const iceServers = [];
 
-    if (stunUrls.length > 0) {
-        iceServers.push({ urls: stunUrls.length === 1 ? stunUrls[0] : stunUrls });
+    if (stunUrlsLocal.length > 0) {
+        iceServers.push({ urls: stunUrlsLocal.length === 1 ? stunUrlsLocal[0] : stunUrlsLocal });
     }
 
-    if (turnUrls.length > 0) {
+    if (turnUrlsLocal.length > 0) {
         const turnServer = {
-            urls: turnUrls.length === 1 ? turnUrls[0] : turnUrls
+            urls: turnUrlsLocal.length === 1 ? turnUrlsLocal[0] : turnUrlsLocal
         };
 
         if (process.env.TURN_USERNAME) turnServer.username = process.env.TURN_USERNAME;
@@ -73,21 +73,21 @@ function emitirPresencaGlobal() {
     emitirOnlineCount();
 }
 
-const VALID_ROOMS = new Set(['arvore-1', 'arvore-2']);
-const MAX_NICKNAME_LEN = 20;
-const MAX_MESSAGE_LEN = 300;
+const validRooms = new Set(['arvore-1', 'arvore-2']);
+const maxVariavelLen = 20;
+const maxMessageLen = 300;
 
-function sanitizarApelido(nickname) {
-    if (typeof nickname !== 'string') return 'Macaquinho';
-    const limpo = nickname.trim().slice(0, MAX_NICKNAME_LEN);
+function sanitizarVariavel(variavel) {
+    if (typeof variavel !== 'string') return 'Macaquinho';
+    const limpo = variavel.trim().slice(0, maxVariavelLen);
     return limpo || 'Macaquinho';
 }
 
-function nicknameEmUsoNaSala(roomId, nickname, ignoreSocketId) {
-    const alvo = nickname.toLowerCase();
+function variavelEmUsoNaSala(roomId, variavel, ignoreSocketId) {
+    const alvo = variavel.toLowerCase();
     return Object.entries(users).some(([id, user]) => {
         if (id === ignoreSocketId) return false;
-        return user.room === roomId && user.nickname.toLowerCase() === alvo;
+        return user.room === roomId && user.variavel.toLowerCase() === alvo;
     });
 }
 
@@ -97,24 +97,24 @@ io.on('connection', (socket) => {
     socket.emit('online-count', getOnlineCount());
     
     // Quando um macaco entra na árvore
-    socket.on('join-room', (roomId, nickname, callback) => {
-        if (!VALID_ROOMS.has(roomId)) {
+    socket.on('join-room', (roomId, variavelUser, callback) => {
+        if (!validRooms.has(roomId)) {
             if (typeof callback === 'function') callback({ ok: false, reason: 'sala-invalida' });
             return;
         }
 
-        const apelido = sanitizarApelido(nickname);
-        if (nicknameEmUsoNaSala(roomId, apelido, socket.id)) {
+        const variavelLimpa = sanitizarVariavel(variavelUser);
+        if (variavelEmUsoNaSala(roomId, variavelLimpa, socket.id)) {
             if (typeof callback === 'function') callback({ ok: false, reason: 'nick-em-uso' });
             return;
         }
 
         socket.join(roomId);
-        users[socket.id] = { room: roomId, nickname: apelido };
+        users[socket.id] = { room: roomId, variavel: variavelLimpa };
         emitirPresencaGlobal();
         
         // Avisa os outros que ele chegou
-        socket.to(roomId).emit('user-connected', socket.id, apelido);
+        socket.to(roomId).emit('user-connected', socket.id, variavelLimpa);
         
         // Manda a lista de quem já tá na sala pro novato
         const usersInRoom = {};
@@ -122,13 +122,13 @@ io.on('connection', (socket) => {
         if (room) {
             for (let id of room) {
                 if (id !== socket.id && users[id]) {
-                    usersInRoom[id] = users[id].nickname;
+                    usersInRoom[id] = users[id].variavel;
                 }
             }
         }
         socket.emit('current-room-users', usersInRoom);
 
-        if (typeof callback === 'function') callback({ ok: true, nickname: apelido });
+        if (typeof callback === 'function') callback({ ok: true, variavel: variavelLimpa });
     });
 
     // Troca de dados de Áudio (WebRTC)
@@ -138,30 +138,30 @@ io.on('connection', (socket) => {
 
     // Chat de texto
     socket.on('chat-message', (roomId, msg) => {
-        if (users[socket.id] && typeof msg === 'string' && msg.trim() && VALID_ROOMS.has(roomId)) {
-            socket.to(roomId).emit('chat-message', socket.id, users[socket.id].nickname, msg.slice(0, MAX_MESSAGE_LEN));
+        if (users[socket.id] && typeof msg === 'string' && msg.trim() && validRooms.has(roomId)) {
+            socket.to(roomId).emit('chat-message', socket.id, users[socket.id].variavel, msg.slice(0, maxMessageLen));
         }
     });
 
-    // Atualiza apelido em tempo real sem precisar sair da sala
-    socket.on('update-nickname', (newNickname, callback) => {
+    // Atualiza nome em tempo real sem precisar sair da sala
+    socket.on('update-nickname', (novaVariavel, callback) => {
         if (!users[socket.id]) {
             if (typeof callback === 'function') callback({ ok: false, reason: 'sem-sala' });
             return;
         }
 
-        const normalized = sanitizarApelido(newNickname);
+        const normalized = sanitizarVariavel(novaVariavel);
         const roomId = users[socket.id].room;
 
-        if (nicknameEmUsoNaSala(roomId, normalized, socket.id)) {
+        if (variavelEmUsoNaSala(roomId, normalized, socket.id)) {
             if (typeof callback === 'function') callback({ ok: false, reason: 'nick-em-uso' });
             return;
         }
 
-        users[socket.id].nickname = normalized;
+        users[socket.id].variavel = normalized;
         socket.to(roomId).emit('user-nickname-updated', socket.id, normalized);
 
-        if (typeof callback === 'function') callback({ ok: true, nickname: normalized });
+        if (typeof callback === 'function') callback({ ok: true, variavel: normalized });
     });
 
     // Quando o macaco clica no botão de sair
@@ -184,15 +184,15 @@ io.on('connection', (socket) => {
 });
 
 // A MAGIA DA NUVEM TÁ AQUI (com fallback automático de porta)
-const BASE_PORT = Number(process.env.PORT) || 3000;
-const MAX_PORT_ATTEMPTS = 20;
+const basePort = Number(process.env.PORT) || 3000;
+const maxPortAttempts = 20;
 
 function iniciarServidorComFallback(portaInicial) {
     let tentativas = 0;
 
     const tentarOuvir = (portaAtual) => {
         const onError = (err) => {
-            if (err && err.code === 'EADDRINUSE' && tentativas < MAX_PORT_ATTEMPTS) {
+            if (err && err.code === 'EADDRINUSE' && tentativas < maxPortAttempts) {
                 tentativas += 1;
                 const proximaPorta = portaAtual + 1;
                 console.warn(`⚠️ Porta ${portaAtual} ocupada. Tentando ${proximaPorta}...`);
@@ -213,4 +213,4 @@ function iniciarServidorComFallback(portaInicial) {
     tentarOuvir(portaInicial);
 }
 
-iniciarServidorComFallback(BASE_PORT);
+iniciarServidorComFallback(basePort);
