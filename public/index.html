@@ -14,7 +14,7 @@
 <body class="fundo-banana">
 
     <div class="sidebar">
-        <h2>🐵 MacacoSpeak</h2>
+        <h2><span class="emoji-titulo">🐵</span> MacacoSpeak</h2>
 
         <div class="variavel-container">
             <label>Suba seu Nome:</label>
@@ -79,7 +79,7 @@
             </div>
             <div class="seletor-cenario">
                 <label>Escolha o Cenário:</label>
-                <select id="select-fundo" onchange="alterarFundo(this.value)">
+                <select id="select-fundo" onchange="alterarFundo(this.value, event)">
                     <option value="banana">🍌 Chuva de Banana</option>
                     <option value="autista">🧩 Macaco Autista Dino & ET</option>
                     <option value="cannabis">🌿 Macaco Maconheiro</option>
@@ -134,6 +134,9 @@
         const variavelStorageKey = 'macacospeak.variavel';
         const themeStorageKey = 'macacospeak.tema';
         const lastRoomStorageKey = 'macacospeak.lastRoom';
+        const ganhoStorageKey = 'macacospeak.ganho';
+        const forcaGateStorageKey = 'macacospeak.forcaGate';
+        const microfoneStorageKey = 'macacospeak.microfone';
         let toastTimer = null;
         let remoteAudioContext = null;
         const remoteSpeakingState = {};
@@ -163,7 +166,7 @@
             btnOk.title = bloqueado ? 'Editar nome' : 'Salvar nome';
             btnOk.style.backgroundColor = bloqueado ? '#F8C291' : '#78E08F';
             btnOk.style.borderColor = bloqueado ? '#E58E26' : '#2E7D32';
-            btnOk.style.boxShadow = bloqueado ? '0 3px 0 #E58E26' : '0 3px 0 #2E7D32';
+            btnOk.style.boxShadow = bloqueado ? '0 4px 0 #E58E26' : '0 4px 0 #2E7D32';
         }
 
         function ajustarEspacamentoChatPorTopbar() {
@@ -318,8 +321,8 @@
             const btnArvore2 = document.getElementById('btn-arvore2');
             if (!btnArvore1 || !btnArvore2) return;
 
-            btnArvore1.innerText = `🌴 Subir na Árvore 1! (${roomCounts['arvore-1'] || 0})`;
-            btnArvore2.innerText = `🌴 Subir na Árvore 2! (${roomCounts['arvore-2'] || 0})`;
+            btnArvore1.innerHTML = `<span>🌴 Árvore 1</span><span class="contagem-chip">${roomCounts['arvore-1'] || 0}</span>`;
+            btnArvore2.innerHTML = `<span>🌴 Árvore 2</span><span class="contagem-chip">${roomCounts['arvore-2'] || 0}</span>`;
         }
 
         function atualizarStatusConexao(texto, tipo) {
@@ -387,6 +390,7 @@
 
         carregarVariavelSalva();
         carregarTemaSalvo();
+        carregarPreferenciasAudio();
         atualizarVisualBotaoRuido();
         ajustarEspacamentoChatPorTopbar();
         window.addEventListener('resize', ajustarEspacamentoChatPorTopbar);
@@ -395,7 +399,7 @@
             const restricoesAudio = {
                 echoCancellation: { ideal: true },
                 noiseSuppression: { ideal: true }, // Agora ativado, igual ao Discord
-                autoGainControl: { ideal: true },  // Agora ativado, igual ao Discord
+                autoGainControl: { ideal: false }, // Desligado de propósito: o ganho manual + compressor/limiter abaixo já cuidam do nível, e dois AGCs disputando causavam "bombeamento" no volume
                 channelCount: { ideal: 1 },
                 sampleRate: { ideal: 48000 },
                 sampleSize: { ideal: 16 },
@@ -620,7 +624,7 @@
             btn.classList.toggle('ligado', isNoiseSuppressed);
             btn.style.backgroundColor = isNoiseSuppressed ? '#FDA7DF' : '#F19066';
             btn.style.borderColor = isNoiseSuppressed ? '#D980FA' : '#C44569';
-            btn.style.boxShadow = isNoiseSuppressed ? '0 3px 0 #D980FA' : '0 3px 0 #C44569';
+            btn.style.boxShadow = isNoiseSuppressed ? '0 4px 0 #D980FA' : '0 4px 0 #C44569';
         }
 
         function alternarPainelAudio() {
@@ -638,11 +642,37 @@
             if (processingNodes?.inputGain && processingAudioContext) {
                 processingNodes.inputGain.gain.setTargetAtTime(ganhoEntradaAtual, processingAudioContext.currentTime, 0.05);
             }
+            try { localStorage.setItem(ganhoStorageKey, String(ganhoEntradaAtual)); } catch (err) { }
         }
 
         function ajustarForcaGate(nivel) {
             const niveis = { 1: 0.14, 2: 0.05, 3: 0.015 };
             forcaCorteRuido = niveis[nivel] ?? 0.05;
+            try { localStorage.setItem(forcaGateStorageKey, String(nivel)); } catch (err) { }
+        }
+
+        function carregarPreferenciasAudio() {
+            try {
+                const ganhoSalvo = parseFloat(localStorage.getItem(ganhoStorageKey));
+                if (!Number.isNaN(ganhoSalvo) && ganhoSalvo >= 1 && ganhoSalvo <= 3) {
+                    ganhoEntradaAtual = ganhoSalvo;
+                    const sliderGanho = document.getElementById('slider-ganho');
+                    const labelGanho = document.getElementById('valor-ganho');
+                    if (sliderGanho) sliderGanho.value = ganhoSalvo;
+                    if (labelGanho) labelGanho.textContent = `${ganhoSalvo.toFixed(1)}x`;
+                }
+
+                const nivelGateSalvo = localStorage.getItem(forcaGateStorageKey);
+                if (nivelGateSalvo) {
+                    const niveis = { 1: 0.14, 2: 0.05, 3: 0.015 };
+                    forcaCorteRuido = niveis[nivelGateSalvo] ?? forcaCorteRuido;
+                    const sliderGate = document.getElementById('slider-forca-gate');
+                    if (sliderGate) sliderGate.value = nivelGateSalvo;
+                }
+
+                const micSalvo = localStorage.getItem(microfoneStorageKey);
+                if (micSalvo) dispositivoMicSelecionado = micSalvo;
+            } catch (err) { }
         }
 
         async function listarMicrofones() {
@@ -685,6 +715,7 @@
 
         async function trocarMicrofone(deviceId) {
             dispositivoMicSelecionado = deviceId || null;
+            try { localStorage.setItem(microfoneStorageKey, dispositivoMicSelecionado || ''); } catch (err) { }
             try {
                 await reiniciarCapturaMicrofone();
                 mostrarToast('🎙️ Microfone trocado!');
@@ -800,7 +831,9 @@
                             ? Math.min(0.3, forcaCorteRuido * 3)
                             : forcaCorteRuido;
                     } else {
-                        gateTarget = 0.85;
+                        // Filtro Mágico desligado: não atenua nada nos intervalos sem fala,
+                        // como o texto da interface promete.
+                        gateTarget = 1;
                     }
 
                     processingNodes.gate.gain.setTargetAtTime(gateTarget, ctx.currentTime, 0.03);
@@ -810,17 +843,67 @@
                 atualizarAnimacaoLocalFala(estaFalando, intensidadePulo);
                 avaliarQualidadeMicrofone(agora, estaFalando);
                 atualizarMedidorRuido(nivelNormalizado, gateTarget, estaFalando);
+                const nivelMiniLocal = document.getElementById('nivel-mini-local');
+                if (nivelMiniLocal) {
+                    nivelMiniLocal.style.width = `${Math.round(Math.max(4, nivelNormalizado * 100))}%`;
+                }
                 micAnimationFrame = requestAnimationFrame(loop);
             };
 
             loop();
         }
 
-        function alterarFundo(tipo) {
-            document.body.className = 'fundo-' + tipo;
-            try {
-                localStorage.setItem(themeStorageKey, tipo);
-            } catch (err) { }
+        const emojisPorTema = {
+            banana: ['🍌', '🐵', '⭐'],
+            cannabis: ['🌿', '🍃', '💨'],
+            gay: ['💋', '🌈', '✨'],
+            noite: ['⭐', '🌙', '✨'],
+            autista: ['🧩', '🦖', '👽'],
+            nuvem: ['☁️', '🐵', '✨']
+        };
+
+        function lancarConfeteTema(tipo, x, y) {
+            const emojis = emojisPorTema[tipo] || ['🎉'];
+            const total = 7;
+            for (let i = 0; i < total; i++) {
+                const span = document.createElement('span');
+                span.className = 'confete-tema';
+                span.textContent = emojis[i % emojis.length];
+                const angulo = (Math.PI * 2 * i) / total;
+                const distancia = 55 + Math.random() * 35;
+                span.style.setProperty('--x', `${x}px`);
+                span.style.setProperty('--y', `${y}px`);
+                span.style.setProperty('--dx', `${Math.cos(angulo) * distancia}px`);
+                span.style.setProperty('--dy', `${Math.sin(angulo) * distancia - 30}px`);
+                span.style.setProperty('--rot', `${Math.random() * 160 - 80}deg`);
+                span.style.animationDelay = `${i * 0.03}s`;
+                document.body.appendChild(span);
+                setTimeout(() => span.remove(), 1100);
+            }
+        }
+
+        function alterarFundo(tipo, evento) {
+            const aplicar = () => {
+                document.body.className = 'fundo-' + tipo;
+                try {
+                    localStorage.setItem(themeStorageKey, tipo);
+                } catch (err) { }
+            };
+
+            const reduzMovimento = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+            const alvo = evento?.target;
+            const rect = alvo?.getBoundingClientRect ? alvo.getBoundingClientRect() : null;
+            const x = rect ? rect.left + rect.width / 2 : window.innerWidth / 2;
+            const y = rect ? rect.top + rect.height / 2 : window.innerHeight / 2;
+
+            if (document.startViewTransition && !reduzMovimento) {
+                document.documentElement.style.setProperty('--ponto-troca-x', `${x}px`);
+                document.documentElement.style.setProperty('--ponto-troca-y', `${y}px`);
+                document.startViewTransition(aplicar);
+                lancarConfeteTema(tipo, x, y);
+            } else {
+                aplicar();
+            }
         }
 
         function salvarVariavel() {
@@ -867,40 +950,7 @@
                     }
 
                     aplicarNomeLocalmente();
-
-                    const caixaLocal = document.getElementById(`caixa-${socket.id}`);
-                    if (caixaLocal) {
-                        caixaLocal.innerHTML = '';
-
-                        const label = document.createElement('label');
-                        label.style.display = 'block';
-                        label.style.marginBottom = '4px';
-                        label.textContent = `🐵 ${variavelLocal}:`;
-
-                        const slider = document.createElement('input');
-                        slider.type = 'range';
-                        slider.min = '0';
-                        slider.max = '1';
-                        slider.step = '0.1';
-                        slider.value = '1';
-                        slider.setAttribute('aria-label', `Volume de ${variavelLocal}`);
-                        slider.addEventListener('input', () => {
-                            const audioEl = document.getElementById(`audio-${socket.id}`);
-                            if (audioEl) audioEl.volume = slider.value;
-                        });
-
-                        caixaLocal.appendChild(label);
-                        caixaLocal.appendChild(slider);
-
-                        let hash = 0;
-                        for (let i = 0; i < variavelLocal.length; i++) {
-                            hash = (hash * 31 + variavelLocal.charCodeAt(i)) & 0xffffffff;
-                        }
-                        const matiz = Math.abs(hash) % 360;
-                        caixaLocal.style.backgroundColor = `hsl(${matiz}, 65%, 85%)`;
-                        caixaLocal.style.borderColor = `hsl(${matiz}, 50%, 50%)`;
-                        label.style.color = `hsl(${matiz}, 80%, 25%)`;
-                    }
+                    criarOuAtualizarCardLocal();
                     adicionarMensagemNaTela('Sistema', `Seu nome mudou para ${variavelLocal}.`, true);
                 });
             } else {
@@ -953,6 +1003,23 @@
 
                 const salaAnterior = salaAtual;
 
+                // IMPORTANTE: a limpeza dos peers/cards da sala anterior precisa
+                // acontecer ANTES de emitir 'join-room'. O servidor manda o evento
+                // 'current-room-users' (que já cria os cards de quem está na sala)
+                // antes de confirmar o callback do join-room — se limpássemos DEPOIS,
+                // apagaríamos os cards recém-criados assim que eles apareciam.
+                if (salaAnterior && salaAnterior !== nomeSala) {
+                    socket.emit('leave-room', salaAnterior);
+                }
+                document.getElementById('lista-amigos').innerHTML = '';
+                document.getElementById('audios').innerHTML = '';
+                for (let id in peers) {
+                    peers[id].close();
+                    delete peers[id];
+                    pararDetectorFalaRemota(id);
+                }
+                criarOuAtualizarCardLocal();
+
                 socket.emit('join-room', nomeSala, variavelLocal, (resposta) => {
                     if (!resposta || !resposta.ok) {
                         if (resposta && resposta.reason === 'nick-em-uso') {
@@ -963,21 +1030,10 @@
                         return;
                     }
 
-                    if (salaAnterior && salaAnterior !== nomeSala) {
-                        socket.emit('leave-room', salaAnterior);
-                    }
-
                     salaAtual = nomeSala;
                     try { localStorage.setItem(lastRoomStorageKey, nomeSala); } catch (err) { }
 
-                    document.getElementById('lista-amigos').innerHTML = '';
-                    document.getElementById('audios').innerHTML = '';
                     if (!reconectando) document.getElementById('chat-messages').innerHTML = '';
-                    for (let id in peers) {
-                        peers[id].close();
-                        delete peers[id];
-                        pararDetectorFalaRemota(id);
-                    }
 
                     document.getElementById('btn-arvore1').classList.remove('btn-ativo');
                     document.getElementById('btn-arvore2').classList.remove('btn-ativo');
@@ -1053,10 +1109,37 @@
             }
         });
 
+        function criarCardPlaceholder(userId, nomeFinal) {
+            if (document.getElementById(`caixa-${userId}`)) return;
+
+            const amigoBox = document.createElement('div');
+            amigoBox.className = 'amigo-box conectando';
+            amigoBox.id = `caixa-${userId}`;
+
+            const label = document.createElement('label');
+            label.id = `label-${userId}`;
+            label.style.marginBottom = '4px';
+            label.textContent = `🐵 ${nomeFinal}:`;
+
+            const status = document.createElement('span');
+            status.className = 'status-conexao-amigo';
+            status.id = `status-${userId}`;
+            status.textContent = '🔄 Conectando áudio...';
+
+            amigoBox.appendChild(label);
+            amigoBox.appendChild(status);
+            document.getElementById('lista-amigos').appendChild(amigoBox);
+        }
+
         function criarPeer(userId, userVariavel) {
             if (peers[userId]) return peers[userId];
 
+            const nomeInicial = remoteVariables[userId] || userVariavel || 'Amiguinho';
+            criarCardPlaceholder(userId, nomeInicial);
+
             const peer = new RTCPeerConnection({ iceServers: rtcIceServers });
+            peers[userId] = peer;
+            verificarListaVazia();
 
             peer.onicecandidate = (eventoIce) => {
                 if (eventoIce.candidate) {
@@ -1064,8 +1147,20 @@
                 }
             };
 
+            peer.oniceconnectionstatechange = () => {
+                const status = document.getElementById(`status-${userId}`);
+                const nome = remoteVariables[userId] || userVariavel || 'Amiguinho';
+                if (peer.iceConnectionState === 'failed') {
+                    if (status) status.textContent = '⚠️ Não consegui conectar o áudio';
+                    mostrarToast(`⚠️ Não consegui conectar o áudio com ${nome}. Tentando de novo...`);
+                    if (typeof peer.restartIce === 'function') peer.restartIce();
+                } else if (peer.iceConnectionState === 'disconnected') {
+                    if (status) status.textContent = '🔌 Conexão instável...';
+                }
+            };
+
             peer.ontrack = (eventoTrack) => {
-                if (document.getElementById(`caixa-${userId}`)) return;
+                if (document.getElementById(`slider-${userId}`)) return;
 
                 // Mantém a variavel correta sem forçar sobrescrita precoce se ocorrer delay
                 const nomeReal = remoteVariables[userId] || userVariavel;
@@ -1075,18 +1170,16 @@
                     remoteVariables[userId] = nomeReal;
                 }
 
-                const amigoBox = document.createElement('div');
-                amigoBox.className = 'amigo-box';
-                amigoBox.id = `caixa-${userId}`;
+                criarCardPlaceholder(userId, nomeFinal);
+                const amigoBox = document.getElementById(`caixa-${userId}`);
+                amigoBox.classList.remove('conectando');
 
-                const label = document.createElement('label');
-                label.id = `label-${userId}`;
-                label.style.display = 'block';
-                label.style.marginBottom = '4px';
-                label.textContent = `🐵 ${nomeFinal}:`;
+                const status = document.getElementById(`status-${userId}`);
+                status?.remove();
 
                 const slider = document.createElement('input');
                 slider.type = 'range';
+                slider.id = `slider-${userId}`;
                 slider.min = '0';
                 slider.max = '1';
                 slider.step = '0.1';
@@ -1096,8 +1189,6 @@
                     const audioEl = document.getElementById(`audio-${userId}`);
                     if (audioEl) audioEl.volume = slider.value;
                 });
-
-                amigoBox.appendChild(label);
                 amigoBox.appendChild(slider);
 
                 const audio = document.createElement('audio');
@@ -1105,7 +1196,6 @@
                 audio.srcObject = eventoTrack.streams[0];
                 audio.autoplay = true;
 
-                document.getElementById('lista-amigos').appendChild(amigoBox);
                 document.getElementById('audios').appendChild(audio);
                 iniciarDetectorFalaRemota(userId, eventoTrack.streams[0]);
 
@@ -1113,7 +1203,6 @@
                 atualizarTituloAmigo(userId);
             };
 
-            peers[userId] = peer;
             return peer;
         }
 
@@ -1128,6 +1217,46 @@
                 verificarListaVazia();
             }
         });
+
+        function criarOuAtualizarCardLocal() {
+            const lista = document.getElementById('lista-amigos');
+            if (!lista || !variavelLocal) return;
+
+            let caixa = document.getElementById('caixa-local');
+            if (!caixa) {
+                caixa = document.createElement('div');
+                caixa.className = 'amigo-box eh-voce';
+                caixa.id = 'caixa-local';
+
+                const label = document.createElement('label');
+                label.id = 'label-local';
+                label.style.marginBottom = '4px';
+
+                const nivelWrap = document.createElement('div');
+                nivelWrap.className = 'card-nivel-mini';
+                const nivelFill = document.createElement('div');
+                nivelFill.className = 'card-nivel-mini-fill';
+                nivelFill.id = 'nivel-mini-local';
+                nivelWrap.appendChild(nivelFill);
+
+                caixa.appendChild(label);
+                caixa.appendChild(nivelWrap);
+                lista.insertBefore(caixa, lista.firstChild);
+            }
+
+            const label = document.getElementById('label-local');
+            const nome = variavelLocal || 'Você';
+            label.textContent = isMuted ? `🙊 ${nome} (você):` : `🐵 ${nome} (você):`;
+
+            let hash = 0;
+            for (let i = 0; i < nome.length; i++) {
+                hash = (hash * 31 + nome.charCodeAt(i)) & 0xffffffff;
+            }
+            const matiz = Math.abs(hash) % 360;
+            caixa.style.backgroundColor = `hsl(${matiz}, 65%, 85%)`;
+            caixa.style.borderColor = `hsl(${matiz}, 50%, 50%)`;
+            label.style.color = `hsl(${matiz}, 80%, 25%)`;
+        }
 
         function verificarListaVazia() {
             const numAmigos = Object.keys(peers).length;
@@ -1214,6 +1343,7 @@
                 tocarSomSintetizado('mutar');
                 atualizarAnimacaoLocalFala(false);
                 avaliarQualidadeMicrofone(performance.now(), false);
+                criarOuAtualizarCardLocal();
             }
         }
 

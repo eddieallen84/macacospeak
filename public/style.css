@@ -22,6 +22,17 @@ body {
     overflow: hidden;
     /* Suaviza a troca de temas */
     transition: background-color 0.5s ease, background-image 0.5s ease;
+    animation: derivarFundo 50s linear infinite;
+}
+
+@keyframes derivarFundo {
+    from {
+        background-position: 0 0;
+    }
+
+    to {
+        background-position: 400px 400px;
+    }
 }
 
 /* 1. TEMA BANANA (AMARELO/MARROM) - PADRÃO */
@@ -129,34 +140,133 @@ body.fundo-nuvem {
 
 h2 {
     margin-top: 0;
-    font-size: 24px;
+    font-size: 26px;
+    font-weight: 800;
     text-align: center;
     color: var(--t-border);
-    text-shadow: 1px 1px 0px var(--t-text-box);
+    -webkit-text-stroke: 1px var(--t-text-box);
+    text-shadow: 2px 2px 0px var(--t-text-box);
     padding-bottom: 10px;
     margin-bottom: 10px;
     transition: color 0.5s ease;
 }
 
-.variavel-container,
-.amigo-box {
+h2 .emoji-titulo {
+    display: inline-block;
+    -webkit-text-stroke: 0;
+    animation: balancarTitulo 2.6s ease-in-out infinite;
+}
+
+@keyframes balancarTitulo {
+
+    0%,
+    100% {
+        transform: rotate(0deg);
+    }
+
+    50% {
+        transform: rotate(-12deg);
+    }
+}
+
+.variavel-container {
     background-color: var(--t-box);
     padding: 12px;
-    border-radius: 12px;
+    border-radius: 16px;
     margin-bottom: 12px;
-    border: 2px solid var(--t-border);
+    border: 3px solid var(--t-border);
     text-align: left;
-    box-shadow: 0 3px 0 var(--t-border);
+    box-shadow: 0 4px 0 var(--t-border);
     transition: all 0.5s ease;
 }
 
-.variavel-container label,
-.amigo-box {
+.variavel-container label {
     font-size: 13px;
     font-weight: bold;
     color: var(--t-text-box);
     display: block;
     transition: color 0.5s ease;
+}
+
+/* Cartão-crachá de cada macaco na sala: parece um cartãozinho pendurado no galho */
+.amigo-box {
+    position: relative;
+    background-color: var(--t-box);
+    padding: 14px 12px 12px;
+    border-radius: 16px;
+    margin-bottom: 14px;
+    margin-top: 6px;
+    border: 3px solid var(--t-border);
+    text-align: left;
+    box-shadow: 0 4px 0 var(--t-border);
+    font-size: 13px;
+    font-weight: bold;
+    color: var(--t-text-box);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.5s ease, border-color 0.5s ease;
+}
+
+.amigo-box::before {
+    content: "";
+    position: absolute;
+    top: -8px;
+    left: 16px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--t-border);
+    box-shadow: 0 0 0 3px var(--t-box);
+}
+
+.amigo-box label {
+    display: block;
+}
+
+.amigo-box.eh-voce {
+    border-style: dashed;
+}
+
+.amigo-box.conectando {
+    opacity: 0.7;
+}
+
+.amigo-box .status-conexao-amigo {
+    font-size: 10px;
+    font-weight: bold;
+    opacity: 0.85;
+    margin: -2px 0 4px;
+    display: block;
+}
+
+.card-nivel-mini {
+    width: 100%;
+    height: 6px;
+    border-radius: 6px;
+    overflow: hidden;
+    background: rgba(0, 0, 0, 0.2);
+    margin-top: 6px;
+}
+
+.card-nivel-mini-fill {
+    height: 100%;
+    width: 4%;
+    border-radius: 6px;
+    background: linear-gradient(90deg, #78E08F, #F6E58D 60%, #EE5253 100%);
+    transition: width 0.08s linear;
+}
+
+.amigo-box.eh-voce::after {
+    content: "VOCÊ";
+    position: absolute;
+    top: -10px;
+    right: 10px;
+    background: #FFD93D;
+    color: #5D4037;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    padding: 2px 7px;
+    border-radius: 999px;
+    border: 2px solid #5D4037;
 }
 
 .input-group {
@@ -173,7 +283,7 @@ select {
     min-width: 0;
     padding: 0 10px;
     border-radius: 10px;
-    border: 2px solid var(--t-border);
+    border: 3px solid var(--t-border);
     font-weight: bold;
     font-size: 14px;
     outline: none;
@@ -197,10 +307,10 @@ input::placeholder {
     background-color: #78E08F;
     color: #2E7D32;
     border-radius: 10px;
-    border: 2px solid #2E7D32;
+    border: 3px solid #2E7D32;
     font-family: inherit;
     font-weight: bold;
-    box-shadow: 0 3px 0 #2E7D32;
+    box-shadow: 0 4px 0 #2E7D32;
     height: 38px;
     margin: 0;
     display: flex;
@@ -215,7 +325,7 @@ input::placeholder {
 }
 
 #btn-ok-variavel:active:not(:disabled) {
-    transform: translateY(3px);
+    transform: translateY(4px);
     box-shadow: none;
 }
 
@@ -226,16 +336,36 @@ input::placeholder {
     margin-bottom: 12px;
 }
 
+.salas button {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    text-align: left;
+}
+
+.contagem-chip {
+    flex-shrink: 0;
+    background: #FFF;
+    color: #5D4037;
+    border: 2px solid #5D4037;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 800;
+    padding: 1px 9px;
+    margin-left: 8px;
+    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.15);
+}
+
 /* Botões padronizados e harmônicos */
 button {
     background-color: #F8C291;
     color: #5D4037;
-    border: 2px solid #E58E26;
+    border: 3px solid #E58E26;
     padding: 10px;
-    border-radius: 12px;
+    border-radius: 16px;
     font-weight: bold;
     font-size: 14px;
-    box-shadow: 0 3px 0 #E58E26;
+    box-shadow: 0 4px 0 #E58E26;
     transition: 0.1s;
     font-family: inherit;
     cursor: pointer;
@@ -243,23 +373,58 @@ button {
 
 button:hover:not(:disabled) {
     background-color: #FAD390;
+    animation: wiggle 0.35s ease;
 }
 
 button:active:not(:disabled) {
-    transform: translateY(3px);
+    transform: translateY(4px);
     box-shadow: none;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+    outline: 3px solid #2E86DE;
+    outline-offset: 2px;
+}
+
+@keyframes wiggle {
+
+    0%,
+    100% {
+        transform: rotate(0deg);
+    }
+
+    25% {
+        transform: rotate(-2.5deg);
+    }
+
+    75% {
+        transform: rotate(2.5deg);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.001s !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001s !important;
+    }
 }
 
 .btn-ativo {
     background-color: #78E08F !important;
-    box-shadow: 0 3px 0 #2E7D32 !important;
+    box-shadow: 0 4px 0 #2E7D32 !important;
     border-color: #2E7D32 !important;
     color: #1B5E20;
 }
 
 .btn-mute {
     background-color: #82CCDD;
-    box-shadow: 0 3px 0 #60A3BC;
+    box-shadow: 0 4px 0 #60A3BC;
     border-color: #60A3BC;
     margin-top: 5px;
     width: 100%;
@@ -268,7 +433,7 @@ button:active:not(:disabled) {
 
 .btn-muted {
     background-color: #F19066 !important;
-    box-shadow: 0 3px 0 #C44569 !important;
+    box-shadow: 0 4px 0 #C44569 !important;
     border-color: #C44569 !important;
     color: #FFF;
 }
@@ -276,7 +441,7 @@ button:active:not(:disabled) {
 /* Cor padrão = mesma cor usada pelo JS pro estado DESLIGADO, pra não nascer com a cor de "ligado" */
 .btn-ruido {
     background-color: #F19066;
-    box-shadow: 0 3px 0 #C44569;
+    box-shadow: 0 4px 0 #C44569;
     border-color: #C44569;
     margin-top: 5px;
     width: 100%;
@@ -353,7 +518,7 @@ button:active:not(:disabled) {
     width: 100%;
     background-color: var(--t-box);
     color: var(--t-text-box);
-    border: 2px solid var(--t-border);
+    border: 3px solid var(--t-border);
     border-radius: 8px;
     padding: 7px;
     font-size: 12.5px;
@@ -365,9 +530,9 @@ button:active:not(:disabled) {
 .painel-audio {
     margin-top: 8px;
     padding: 12px;
-    border-radius: 12px;
+    border-radius: 16px;
     background-color: var(--t-box);
-    border: 2px solid var(--t-border);
+    border: 3px solid var(--t-border);
     transition: background-color 0.5s ease;
 }
 
@@ -430,9 +595,9 @@ button:active:not(:disabled) {
 .chat-topbar .seletor-cenario {
     width: 260px;
     background-color: var(--t-box);
-    border: 2px solid var(--t-border);
-    border-radius: 12px;
-    box-shadow: 0 3px 0 var(--t-border);
+    border: 3px solid var(--t-border);
+    border-radius: 16px;
+    box-shadow: 0 4px 0 var(--t-border);
     padding: 8px;
     transition: all 0.5s ease;
 }
@@ -460,9 +625,9 @@ button:active:not(:disabled) {
 .badge-status {
     background-color: var(--t-box);
     color: var(--t-text-box);
-    border: 2px solid var(--t-border);
+    border: 3px solid var(--t-border);
     border-radius: 999px;
-    box-shadow: 0 3px 0 var(--t-border);
+    box-shadow: 0 4px 0 var(--t-border);
     padding: 4px 10px;
     font-size: 12px;
     font-weight: bold;
@@ -493,9 +658,9 @@ button:active:not(:disabled) {
     z-index: 50;
     background-color: var(--t-box);
     color: var(--t-text-box);
-    border: 2px solid var(--t-border);
-    box-shadow: 0 3px 0 var(--t-border);
-    border-radius: 12px;
+    border: 3px solid var(--t-border);
+    box-shadow: 0 4px 0 var(--t-border);
+    border-radius: 16px;
     padding: 10px 14px;
     font-size: 13px;
     font-weight: bold;
@@ -567,20 +732,44 @@ input[type="range"] {
     cursor: pointer;
 }
 
-/* Galho interage com as cores */
+/* Galho interage com as cores — é o elemento principal da sidebar */
 #visual-da-arvore {
-    background-color: var(--t-side);
-    border-radius: 15px;
-    padding: 10px;
+    background: linear-gradient(180deg, var(--t-bg, var(--t-side)) 0%, var(--t-side) 100%);
+    border-radius: 18px;
+    padding: 14px 10px 10px;
     margin-top: 10px;
     position: relative;
-    min-height: 80px;
+    min-height: 110px;
     display: flex;
     justify-content: center;
     align-items: flex-end;
-    gap: 4px;
-    border: 2px dashed var(--t-border);
+    gap: 6px;
+    border: 3px dashed var(--t-border);
     transition: all 0.5s ease;
+}
+
+#visual-da-arvore::before {
+    content: "🍃";
+    position: absolute;
+    top: -6px;
+    left: -4px;
+    font-size: 26px;
+    opacity: 0.85;
+    transform-origin: top center;
+    animation: balancarFolha 3.4s ease-in-out infinite;
+    z-index: 1;
+}
+
+@keyframes balancarFolha {
+
+    0%,
+    100% {
+        transform: rotate(-8deg);
+    }
+
+    50% {
+        transform: rotate(10deg);
+    }
 }
 
 #visual-da-arvore::after {
@@ -653,17 +842,55 @@ input[type="range"] {
 }
 
 .mensagem {
+    position: relative;
     padding: 10px 15px;
-    border-radius: 15px;
+    border-radius: 16px;
     max-width: 75%;
     font-weight: 500;
     font-size: 14px;
     color: var(--t-text);
     background-color: var(--t-msg-outra);
-    border: 2px solid var(--t-border);
+    border: 3px solid var(--t-border);
     box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.1);
     word-break: break-word;
     transition: all 0.5s ease;
+    animation: balaoEntrar 0.22s ease;
+}
+
+@keyframes balaoEntrar {
+    from {
+        transform: scale(0.85);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.mensagem::after {
+    content: "";
+    position: absolute;
+    bottom: -3px;
+    width: 16px;
+    height: 16px;
+    background-color: inherit;
+    border-right: 3px solid var(--t-border);
+    border-bottom: 3px solid var(--t-border);
+    transform: rotate(45deg);
+}
+
+.mensagem:not(.minha):not(.mensagem-sistema)::after {
+    left: 14px;
+}
+
+.mensagem.minha::after {
+    right: 14px;
+}
+
+.mensagem.mensagem-sistema::after {
+    display: none;
 }
 
 .mensagem.minha {
@@ -687,7 +914,19 @@ input[type="range"] {
 }
 
 .amigo-box.falando-remoto {
-    box-shadow: 0 0 0 2px rgba(120, 224, 143, 0.5), 0 3px 0 var(--t-border);
+    animation: falandoPulso 0.8s ease-in-out infinite;
+}
+
+@keyframes falandoPulso {
+
+    0%,
+    100% {
+        box-shadow: 0 0 0 2px rgba(120, 224, 143, 0.55), 0 4px 0 var(--t-border);
+    }
+
+    50% {
+        box-shadow: 0 0 0 5px rgba(120, 224, 143, 0.25), 0 4px 0 var(--t-border);
+    }
 }
 
 /* Menu Inferior Fluido */
@@ -706,8 +945,8 @@ input[type="range"] {
     flex: 1;
     min-width: 0;
     padding: 0 15px;
-    border-radius: 12px;
-    border: 2px solid var(--t-border);
+    border-radius: 16px;
+    border: 3px solid var(--t-border);
     font-size: 14px;
     outline: none;
     background-color: var(--t-msg-outra);
@@ -723,8 +962,8 @@ input[type="range"] {
     padding: 0 20px;
     background-color: #78E08F;
     color: #1B5E20;
-    border: 2px solid #2E7D32;
-    box-shadow: 0 3px 0 #2E7D32;
+    border: 3px solid #2E7D32;
+    box-shadow: 0 4px 0 #2E7D32;
     height: 45px;
     margin: 0;
     display: flex;
@@ -734,7 +973,7 @@ input[type="range"] {
 }
 
 #btn-enviar:active {
-    transform: translateY(3px);
+    transform: translateY(4px);
     box-shadow: none;
 }
 
@@ -798,5 +1037,57 @@ input[type="range"] {
     #overlay-bloqueio {
         border-radius: 0;
         font-size: 20px;
+    }
+}
+
+/* ---------------------------------------------------------------
+   TROCA DE CENÁRIO: transição em círculo (View Transitions API)
+   + confetes temáticos. Em navegadores sem suporte, cai de volta
+   pro crossfade suave que já existia no body { transition: ... }.
+--------------------------------------------------------------- */
+::view-transition-old(root) {
+    animation: 0.5s ease both fecharCortinaAntiga;
+}
+
+::view-transition-new(root) {
+    animation: 0.6s ease both abrirCortinaNova;
+}
+
+@keyframes fecharCortinaAntiga {
+    to {
+        opacity: 0;
+    }
+}
+
+@keyframes abrirCortinaNova {
+    from {
+        clip-path: circle(0% at var(--ponto-troca-x, 50%) var(--ponto-troca-y, 50%));
+    }
+
+    to {
+        clip-path: circle(150% at var(--ponto-troca-x, 50%) var(--ponto-troca-y, 50%));
+    }
+}
+
+.confete-tema {
+    position: fixed;
+    z-index: 60;
+    font-size: 26px;
+    pointer-events: none;
+    top: var(--y, 50%);
+    left: var(--x, 50%);
+    opacity: 0;
+    animation: confeteVoar 1s ease-out forwards;
+}
+
+@keyframes confeteVoar {
+    0% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(0.4) rotate(0deg);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translate(calc(-50% + var(--dx, 0px)), calc(-50% + var(--dy, -60px))) scale(1.1) rotate(var(--rot, 90deg));
     }
 }
