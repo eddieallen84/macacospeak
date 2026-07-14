@@ -1123,6 +1123,49 @@ input[type="range"] {
         margin-bottom: 8px;
     }
 
+    .variavel-container {
+        padding: 8px 10px;
+        margin-bottom: 8px;
+    }
+
+    /* As duas árvores lado a lado no celular: economiza uma linha inteira de altura */
+    .salas {
+        flex-direction: row;
+        gap: 6px;
+        margin-bottom: 8px;
+    }
+
+    .salas button {
+        flex: 1;
+        min-width: 0;
+        flex-wrap: wrap;
+        justify-content: center;
+        text-align: center;
+        gap: 4px;
+        padding: 8px 6px;
+        font-size: 12px;
+    }
+
+    .contagem-chip {
+        margin-left: 0;
+        font-size: 10.5px;
+        padding: 1px 6px;
+    }
+
+    /* Mic e Filtro Mágico mais enxutos, mantendo o texto legível */
+    .btn-mute,
+    .btn-ruido {
+        padding: 8px;
+        font-size: 12.5px;
+        margin-top: 4px;
+    }
+
+    .btn-config-audio {
+        padding: 6px;
+        font-size: 11px;
+        margin-top: 8px;
+    }
+
     .chat-area {
         min-height: 0;
         flex: 1 1 auto;

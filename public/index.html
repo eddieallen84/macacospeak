@@ -986,7 +986,10 @@
 
         function alterarFundo(tipo, evento) {
             const aplicar = () => {
-                document.body.className = 'fundo-' + tipo;
+                Array.from(document.body.classList)
+                    .filter((c) => c.startsWith('fundo-'))
+                    .forEach((c) => document.body.classList.remove(c));
+                document.body.classList.add('fundo-' + tipo);
                 try {
                     localStorage.setItem(themeStorageKey, tipo);
                 } catch (err) { }
